@@ -1,5 +1,6 @@
 import logging
 import os
+
 from flask import Flask, jsonify, make_response, redirect, request
 from flask_jwt_extended import JWTManager
 from logging.handlers import TimedRotatingFileHandler
@@ -8,6 +9,7 @@ from os import environ as env
 
 from utils.log import Logger
 from utils.redis_db import Redis
+from api_routes import admin
 
 load_dotenv(dotenv_path="conf/metabank.env")
 
@@ -39,6 +41,8 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     except (ConnectionRefusedError, ConnectionError):
         return False
 
+
+admin.add_routes(app)
 
 # init logger
 log_level = int(env['LOG_LEVEL'])
