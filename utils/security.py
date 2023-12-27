@@ -12,7 +12,7 @@ def generate_hash(data_to_hash, salt=None):
     """
     if salt is None:
         salt = str(uuid4())
-    return pbkdf2_hmac('sha512', password=data_to_hash.encode(), salt=salt.encode(), iterations=123456).hex(), salt
+    return pbkdf2_hmac('sha512', password=data_to_hash.encode(), salt=salt.encode(), iterations=37540).hex(), salt
 
 
 def encrypt(data_to_encrypt, encryption_key):
