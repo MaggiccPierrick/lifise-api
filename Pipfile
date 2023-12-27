@@ -13,6 +13,7 @@ requests = "*"
 uwsgi = "*"
 boto3 = "*"
 cryptography = "*"
+mailjet-rest = "*"
 
 [dev-packages]
 

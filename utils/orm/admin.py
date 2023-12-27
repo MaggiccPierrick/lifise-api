@@ -1,5 +1,5 @@
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta
 from os import environ as env
 
 from utils.orm.abstract import Abstract
@@ -72,6 +72,25 @@ class AdminAccount(Abstract):
 
         return True, 200, "Admin account successfully created"
 
+    def reset_password(self, email_address: str, new_password: str, reset_token: str):
+        """
+        Reset admin password
+        :param email_address:
+        :param new_password:
+        :param reset_token:
+        :return:
+        """
+        status, http_code, message = self.check_otp_token(email_address=email_address, token=reset_token)
+        if status is False:
+            return status, http_code, message
+
+        hash_password, unique_salt = generate_hash(new_password + env['APP_PASSWORD_SALT'])
+        self.set('password', hash_password)
+        self.set('user_salt', unique_salt)
+        self.set('updated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, "Password updated"
+
     def is_existing(self, email_address=None):
         """
         Verify if the given account parameters already exist in db
@@ -97,3 +116,55 @@ class AdminAccount(Abstract):
         if self.get('admin_uuid') is not None:
             return True
         return False
+
+    def create_otp_token(self, email_address: str = None, admin_uuid: str = None):
+        """
+        Set a new otp token
+        :param email_address:
+        :param admin_uuid:
+        :return:
+        """
+        if email_address is not None:
+            if check_email_format(email_address) is False:
+                return False, 400, "Bad email address format"
+
+            email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
+            self.load({'email_hash': email_address_hash, 'deactivated': 0})
+        elif admin_uuid is not None:
+            self.load({'admin_uuid': admin_uuid})
+
+        if self.get('admin_uuid') is None:
+            return False, 400, "Account does not exist"
+
+        expiration_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
+        token = str(uuid4())[:8]
+        self.set('otp_token', token)
+        self.set('otp_expiration', expiration_date)
+        self.update()
+        return True, 200, "Token created"
+
+    def check_otp_token(self, email_address: str, token: str):
+        """
+        Check the otp token for the given user
+        :param email_address:
+        :param token:
+        :return:
+        """
+        if check_email_format(email_address) is False:
+            return False, 400, "Bad email address format"
+
+        email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
+        self.load({'email_hash': email_address_hash, 'otp_token': token, 'deactivated': 0})
+        if self.get('admin_uuid') is not None:
+            if self.get('otp_expiration') < str(datetime.utcnow()):
+                self.set('otp_token', None)
+                self.set('otp_expiration', None)
+                self.update()
+                return False, 401, "Token expired"
+            else:
+                self.set('otp_token', None)
+                self.set('otp_expiration', None)
+                self.update()
+                return True, 200, "Token validated"
+        else:
+            return False, 401, "Wrong token"
