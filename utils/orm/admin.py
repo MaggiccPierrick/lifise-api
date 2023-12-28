@@ -1,6 +1,7 @@
 from uuid import uuid4
 from datetime import datetime, timedelta
 from os import environ as env
+from random import randrange
 
 from utils.orm.abstract import Abstract
 from utils.security import generate_hash
@@ -139,7 +140,7 @@ class AdminAccount(Abstract):
         expiration_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
         token = str(uuid4())[:8]
         self.set('otp_token', token)
-        self.set('otp_expiration', expiration_date)
+        self.set('otp_expiration', expiration_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         self.update()
         return True, 200, "Token created"
 
@@ -168,3 +169,44 @@ class AdminAccount(Abstract):
                 return True, 200, "Token validated"
         else:
             return False, 401, "Wrong token"
+
+    def login(self, login, password, token=None):
+        """
+        Verify login and password and generate 2fa token or verify token if given
+        :param login: login of the user (email or username)
+        :param password: password of the user
+        :param token: 2fa token to verify (if given)
+        """
+        login_hash, email_salt = generate_hash(data_to_hash=login, salt=env['APP_DB_HASH_SALT'])
+        self.load({'email_hash': login_hash, 'deactivated': '0'})
+        if self.get('admin_uuid') is None:
+            return False, 401, "Login failed"
+
+        password_hash, password_salt = generate_hash(data_to_hash=password + env['APP_PASSWORD_SALT'],
+                                                     salt=self.get('user_salt'))
+        if self.get('password') == password_hash:
+            if token is None:
+                otp_token = '{:06}'.format(randrange(1, 10 ** 6))
+                print(otp_token)
+                self.set('otp_token', otp_token)
+                validity_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
+                self.set('otp_expiration', validity_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+                self.update()
+                return True, 200, "2FA token set"
+            else:
+                current_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                if self.get('otp_token') is None:
+                    return False, 401, "Login failed"
+                if token == self.get('otp_token'):
+                    if self.get('otp_expiration') > current_time:
+                        self.set('last_login', current_time)
+                        self.set('otp_token', None)
+                        self.set('otp_expiration', None)
+                        self.update()
+                        return True, 200, "Login successful"
+                    else:
+                        return False, 401, "Token expired"
+                return False, 401, "Login failed"
+        else:
+            return False, 401, "Login failed"
+
