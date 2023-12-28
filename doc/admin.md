@@ -1,11 +1,48 @@
-# Metabank API - Admin features
+# MetaBank API - Admin features
   
 <i>This documentation will be updated after each update of the platform.</i>  
 
 ## Table of contents
+[Admin login](#login-2fa)  
 [Create Admin Account](#create-admin-account)  
+[Ask Reset Password Token](#create-reset-password-token)  
+[Reset Password](#reset-password)  
 
 ## Endpoints description
+### Login 2FA
+_Authorized user: Admin_  
+Login to the platform  
+
+URI
+```
+POST /api/v1/admin/login
+```
+JSON
+```
+{
+    "login": "john@doe.com",
+    "password": "password",
+    "2fa_token": "098765"       # optional, only to send the 2FA token (2nd call)
+}
+```
+RESPONSE
+```
+{
+    "account": {
+        "admin_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8",
+        "created_date": "2023-12-27T14:00:04.512864Z",
+        "email_address": "john@doe.com",
+        "firstname": "John",
+        "lastname": "D.",
+        "updated_date": "2023-12-27T18:00:40.916883Z"
+    },
+    "jwt_token": "eyJhbG...",
+    "message": "Login successful",
+    "refresh_token": "eyJhbGci...",
+    "status": true
+}
+```
+
 ### Create admin account
 _Authorized user: Admin_  
 Create a new admin account on the platform  
