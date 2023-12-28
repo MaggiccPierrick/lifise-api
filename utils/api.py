@@ -54,7 +54,7 @@ def admin_required(func):
     """
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        admin_uuid = get_jwt_identity().get('user_uuid')
+        admin_uuid = get_jwt_identity().get('admin_uuid')
         if get_jwt_identity().get('is_admin') is True:
             admin = AdminAccount()
             if admin.is_admin(user_uuid=admin_uuid):

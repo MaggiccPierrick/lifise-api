@@ -1,5 +1,6 @@
 from flask import jsonify, make_response, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity
+from os import environ as env
 
 from utils.orm.admin import AdminAccount
 from utils.api import http_error_400, json_data_required, admin_required
@@ -7,6 +8,68 @@ from utils.mailjet import Mailjet
 
 
 def add_routes(app):
+    @app.route('/api/v1/admin/login', methods=['POST'])
+    @json_data_required
+    def admin_login():
+        """
+        Login admin with 2FA token
+        :return:
+        """
+        mandatory_keys = ['login', 'password']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        login = request.json.get('login').lower()
+        password = request.json.get('password')
+        token = request.json.get('2fa_token')
+
+        admin = AdminAccount()
+        if token is None:
+            status, http_code, message = admin.login(login=login, password=password)
+            if status is True:
+                delay = int(env['APP_TOKEN_DELAY']) // 60
+                subject = "MetaBank Admin - 2FA login"
+                content = "Connexion à votre compte admin sur MetaBank.<br>" \
+                          "Code d'authentification (valide {0} minutes) : {1}".format(delay, admin.get('otp_token'))
+                html_content = "<html><head><title>MetaBank</title><body>{0}</body></head></html>".format(content)
+                mailjet = Mailjet()
+                email_sent, http_code, message = mailjet.send_basic_mail(
+                    to={'email': admin.get('email'), 'name': admin.get('firstname')}, subject=subject,
+                    txt_message=content, html_message=html_content)
+
+            json_data = {
+                'status': status,
+                'message': message
+            }
+
+        else:
+            status, http_code, message = admin.login(login=login, password=password, token=token)
+            if status is False:
+                json_data = {
+                    'status': status,
+                    'message': message
+                }
+                return make_response(jsonify(json_data), http_code)
+
+            jwt_identity = {'username': admin.get('username'), 'admin_uuid': admin.get('admin_uuid'), 'is_admin': True}
+            jwt_token = create_access_token(identity=jwt_identity)
+            refresh_token = create_refresh_token(identity=jwt_identity)
+            json_data = {
+                'status': status,
+                'message': message,
+                'jwt_token': jwt_token,
+                'refresh_token': refresh_token,
+                'account': {
+                    'email_address': admin.get('email'),
+                    'admin_uuid': admin.get('admin_uuid'),
+                    'firstname': admin.get('firstname'),
+                    'lastname': admin.get('lastname'),
+                    'created_date': admin.get('created_date'),
+                    'updated_date': admin.get('updated_date')
+                }
+            }
+        return make_response(jsonify(json_data), http_code)
+
     @app.route('/api/v1/admin/create', methods=['POST'])
     @json_data_required
     @jwt_required()
