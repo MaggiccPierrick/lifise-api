@@ -116,7 +116,7 @@ sudo nano /etc/redis/metabank-api.conf
 
 Copy / paste the following content in Redis config file (/etc/redis/metabank-api.conf)  
 ```
-port              6380
+port              6379
 daemonize         no
 save              60 1
 bind              127.0.0.1 ::1
