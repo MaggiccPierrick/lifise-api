@@ -43,6 +43,26 @@ RESPONSE
 }
 ```
 
+### Logout
+_Authorized user: Admin_  
+Logout from the platform  
+
+URI
+```
+GET /api/v1/admin/logout
+```
+HEADER
+```
+X-AUTH-USER: "Refresh_token"
+```
+RESPONSE
+```
+{
+    "message": "Logout successful",
+    "status": true
+}
+```
+
 ### Create admin account
 _Authorized user: Admin_  
 Create a new admin account on the platform  

@@ -1,10 +1,11 @@
 from flask import jsonify, make_response, request
-from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity
+from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity, get_jwt
 from os import environ as env
 
 from utils.orm.admin import AdminAccount
 from utils.api import http_error_400, json_data_required, admin_required
 from utils.email import Email
+from utils.redis_db import Redis
 
 
 def add_routes(app):
@@ -66,6 +67,31 @@ def add_routes(app):
                 }
             }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/logout', methods=['GET'])
+    @jwt_required(refresh=True)
+    def logout_admin():
+        """
+        Logout the admin
+        :return:
+        """
+        jti = get_jwt()["jti"]
+        try:
+            Redis().get_connection().set(jti, "revoked", ex=int(env['JWT_REFRESH_TOKEN_EXPIRES']))
+        except (ConnectionRefusedError, ConnectionError) as e:
+            app.logger.warning("Connection to Redis failed - error= {0}".format(e))
+            json_data = {
+                'status': False,
+                'message': 'Logout failed'
+            }
+            response = make_response(jsonify(json_data), 503)
+            response.headers['Retry-After'] = '10'
+            return response
+        json_data = {
+            'status': True,
+            'message': 'Logout successful'
+        }
+        return make_response(jsonify(json_data), 200)
 
     @app.route('/api/v1/admin/create', methods=['POST'])
     @json_data_required
