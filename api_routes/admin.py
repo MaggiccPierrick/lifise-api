@@ -4,7 +4,7 @@ from os import environ as env
 
 from utils.orm.admin import AdminAccount
 from utils.api import http_error_400, json_data_required, admin_required
-from utils.mailjet import Mailjet
+from utils.email import Email
 
 
 def add_routes(app):
@@ -29,13 +29,10 @@ def add_routes(app):
             if status is True:
                 delay = int(env['APP_TOKEN_DELAY']) // 60
                 subject = "MetaBank Admin - 2FA login"
-                content = "Connexion à votre compte admin sur MetaBank.<br>" \
+                content = "Connexion à votre compte admin sur MetaBank.\n" \
                           "Code d'authentification (valide {0} minutes) : {1}".format(delay, admin.get('otp_token'))
-                html_content = "<html><head><title>MetaBank</title><body>{0}</body></head></html>".format(content)
-                mailjet = Mailjet()
-                email_sent, http_code, message = mailjet.send_basic_mail(
-                    to={'email': admin.get('email'), 'name': admin.get('firstname')}, subject=subject,
-                    txt_message=content, html_message=html_content)
+                email = Email(app)
+                email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
 
             json_data = {
                 'status': status,
@@ -126,17 +123,20 @@ def add_routes(app):
 
         subject = "MetaBank Admin - reset password"
         content = "Nous venons de recevoir une demande de réinitialisation de votre mot de passe " \
-                  "sur la plateforme MetaBank Admin." \
-                  "Copier / coller le code suivant dans le formulaire pour pouvoir créer un nouveau mot de passe."
-        html_content = "<html><head><title>MetaBank</title><body>Reset password token : {0}</body></head>" \
-                       "</html>".format(admin.get('otp_token'))
-        mailjet = Mailjet()
-        email_sent, http_code, message = mailjet.send_basic_mail(
-            to={'email': admin.get('email'), 'name': admin.get('firstname')}, subject=subject, txt_message=content,
-            html_message=html_content)
+                  "sur la plateforme MetaBank Admin.\n" \
+                  "Copier / coller le code suivant dans le formulaire pour pouvoir créer un nouveau mot de passe.\n" \
+                  "{0}".format(admin.get('otp_token'))
+        email = Email(app)
+        email_sent = email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
+        if email_sent is False:
+            json_data = {
+                'status': False,
+                'message': 'Failed to send token by email'
+            }
+            return make_response(jsonify(json_data), 503)
 
         json_data = {
-            'status': email_sent,
+            'status': status,
             'message': message
         }
         return make_response(jsonify(json_data), http_code)
@@ -168,13 +168,8 @@ def add_routes(app):
 
         subject = "MetaBank Admin - mot de passe réinitialisé"
         content = "Votre mot de passe a été réinitialisé avec succès."
-        html_content = "<html><head><title>MetaBank</title><body>Votre mot de passe a été réinitialisé avec succès." \
-                       "</body></head></html>"
-        mailjet = Mailjet()
-        email_sent, email_http_code, email_message = mailjet.send_basic_mail(
-            to={'email': admin.get('email'), 'name': admin.get('firstname')}, subject=subject, txt_message=content,
-            html_message=html_content)
-
+        email = Email(app)
+        email_sent = email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
         json_data = {
             'status': status,
             'message': message
