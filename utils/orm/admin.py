@@ -187,7 +187,6 @@ class AdminAccount(Abstract):
         if self.get('password') == password_hash:
             if token is None:
                 otp_token = '{:06}'.format(randrange(1, 10 ** 6))
-                print(otp_token)
                 self.set('otp_token', otp_token)
                 validity_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
                 self.set('otp_expiration', validity_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))

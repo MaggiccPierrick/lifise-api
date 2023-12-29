@@ -42,6 +42,13 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
         return False
 
 
+# init Mail settings
+app.config['MAIL_SERVER'] = env['EMAIL_SMTP_SERVER']
+app.config['MAIL_PORT'] = int(env['EMAIL_SMTP_PORT'])
+app.config['MAIL_USERNAME'] = env['EMAIL_ADDRESS']
+app.config['MAIL_PASSWORD'] = env['EMAIL_PASSWORD']
+app.config['MAIL_USE_TLS'] = env['EMAIL_TLS']
+
 admin.add_routes(app)
 
 # init logger
