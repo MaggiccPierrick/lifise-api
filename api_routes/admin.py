@@ -93,6 +93,39 @@ def add_routes(app):
         }
         return make_response(jsonify(json_data), 200)
 
+    @app.route('/api/v1/admin/account', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @admin_required
+    def update_admin_account():
+        """
+        Update personal account information
+        :return:
+        """
+        email_address = request.json.get('email_address')
+        firstname = request.json.get('firstname')
+        lastname = request.json.get('lastname')
+        old_password = request.json.get('old_password')
+        new_password = request.json.get('new_password')
+
+        admin_uuid = get_jwt_identity().get('admin_uuid')
+
+        admin = AdminAccount()
+        admin.load({'admin_uuid': admin_uuid})
+        status, http_code, message = admin.update_account(email_address=email_address, firstname=firstname,
+                                                          lastname=lastname, old_password=old_password,
+                                                          new_password=new_password)
+        if status is True:
+            subject = "MetaBank Admin - update account"
+            content = "Votre compte admin vient d'être mis à jour."
+            email = Email(app)
+            email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
+
     @app.route('/api/v1/admin/create', methods=['POST'])
     @json_data_required
     @jwt_required()
@@ -115,9 +148,6 @@ def add_routes(app):
         admin = AdminAccount()
         status, http_code, message = admin.create_account(creator_id=admin_uuid, email_address=email_address,
                                                           firstname=firstname, lastname=lastname)
-        if status is False:
-            return http_error_400(message)
-
         json_data = {
             'status': status,
             'message': message,
