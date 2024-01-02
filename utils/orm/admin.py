@@ -19,7 +19,7 @@ class AdminAccount(Abstract):
         self._columns = ['admin_uuid', 'firstname', 'lastname', 'email', 'email_hash', 'email_validated',
                          'otp_token', 'otp_expiration', 'password', 'user_salt', 'last_login',
                          'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
-        self._encrypt_fields = ['email', 'firstname', 'lastname']
+        self._encrypt_fields = ['email', 'firstname', 'lastname', 'otp_token']
         self._primary_key = ['admin_uuid']
         self._defaults = {
             'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
