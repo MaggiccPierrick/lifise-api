@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `admin` (
     `email` TEXT NOT NULL,
     `email_hash` CHAR(128) NOT NULL,
     `email_validated` INTEGER NOT NULL,
-    `otp_token` CHAR(20) DEFAULT NULL,
+    `otp_token` TEXT DEFAULT NULL,
     `otp_expiration` CHAR(30) DEFAULT NULL,
     `password` CHAR(128) NOT NULL,
     `user_salt` CHAR(50) NOT NULL,

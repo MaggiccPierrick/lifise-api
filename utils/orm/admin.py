@@ -4,6 +4,7 @@ from os import environ as env
 from random import randrange
 
 from utils.orm.abstract import Abstract
+from utils.orm.filter import Filter
 from utils.security import generate_hash
 from utils.email import check_email_format
 
@@ -18,7 +19,7 @@ class AdminAccount(Abstract):
         self._columns = ['admin_uuid', 'firstname', 'lastname', 'email', 'email_hash', 'email_validated',
                          'otp_token', 'otp_expiration', 'password', 'user_salt', 'last_login',
                          'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
-        self._encrypt_fields = ['email', 'firstname', 'lastname']
+        self._encrypt_fields = ['email', 'firstname', 'lastname', 'otp_token']
         self._primary_key = ['admin_uuid']
         self._defaults = {
             'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
@@ -26,7 +27,7 @@ class AdminAccount(Abstract):
             'deactivated': 0
         }
 
-    def create_account(self, creator_id, email_address, firstname, lastname):
+    def create_account(self, creator_id: str, email_address: str, firstname: str, lastname: str):
         """
         Create a new admin account
         :param creator_id:
@@ -73,6 +74,50 @@ class AdminAccount(Abstract):
 
         return True, 200, "Admin account successfully created"
 
+    def update_account(self, email_address: str = None, firstname: str = None, lastname: str = None,
+                       old_password: str = None, new_password: str = None):
+        """
+        Update personal information
+        :param email_address:
+        :param firstname:
+        :param lastname:
+        :param old_password:
+        :param new_password:
+        :return:
+        """
+        updated = False
+        if firstname is not None and 2 <= len(firstname) < 30:
+            self.set('firstname', firstname)
+            updated = True
+
+        if lastname is not None and 2 <= len(lastname) < 30:
+            self.set('lastname', lastname)
+            updated = True
+
+        if email_address is not None and check_email_format(email_address) is True:
+            email_address = email_address.lower()
+            if self.is_existing(email_address=email_address) is True:
+                return False, 400, "Email address already exists"
+            email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
+            self.set('email', email_address)
+            self.set('email_hash', email_address_hash)
+            updated = True
+
+        if old_password is not None and new_password is not None:
+            password_hash, password_salt = generate_hash(data_to_hash=old_password + env['APP_PASSWORD_SALT'],
+                                                         salt=self.get('user_salt'))
+            if self.get('password') == password_hash:
+                hash_password, unique_salt = generate_hash(new_password + env['APP_PASSWORD_SALT'])
+                self.set('password', hash_password)
+                self.set('user_salt', unique_salt)
+                updated = True
+
+        if updated is True:
+            self.update()
+            return True, 200, "Admin account successfully updated"
+        else:
+            return False, 400, "Account not updated"
+
     def reset_password(self, email_address: str, new_password: str, reset_token: str):
         """
         Reset admin password
@@ -92,18 +137,17 @@ class AdminAccount(Abstract):
         self.update()
         return True, 200, "Password updated"
 
-    def is_existing(self, email_address=None):
+    def is_existing(self, email_address):
         """
         Verify if the given account parameters already exist in db
         :param email_address:
         :return:
         """
-        if email_address is None:
-            return False
-
         email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
-        self.load({'email_hash': email_address_hash})
-        if self.get('admin_uuid') is not None:
+        filter_admin = Filter()
+        filter_admin.add('email_hash', email_address_hash)
+        admin_accounts = self.list(fields=['admin_uuid'], filter_object=filter_admin)
+        if len(admin_accounts) > 0:
             return True
         return False
 
@@ -208,4 +252,3 @@ class AdminAccount(Abstract):
                 return False, 401, "Login failed"
         else:
             return False, 401, "Login failed"
-
