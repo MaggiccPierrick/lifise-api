@@ -200,8 +200,8 @@ class AdminAccount(Abstract):
             return False, 400, "Bad email address format"
 
         email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
-        self.load({'email_hash': email_address_hash, 'otp_token': token, 'deactivated': 0})
-        if self.get('admin_uuid') is not None:
+        self.load({'email_hash': email_address_hash, 'deactivated': 0})
+        if self.get('admin_uuid') is not None and self.get('otp_token') == token:
             if self.get('otp_expiration') < str(datetime.utcnow()):
                 self.set('otp_token', None)
                 self.set('otp_expiration', None)
