@@ -68,6 +68,22 @@ def add_routes(app):
             }
         return make_response(jsonify(json_data), http_code)
 
+    @app.route('/api/v1/admin/login/refresh', methods=['GET'])
+    @jwt_required(refresh=True)
+    def refresh_login():
+        """
+        Refresh the jwt token
+        :return:
+        """
+        identity = get_jwt_identity()
+        jwt_token = create_access_token(identity=identity)
+        json_data = {
+            'status': True,
+            'message': 'Refresh successful',
+            'jwt_token': jwt_token
+        }
+        return make_response(jsonify(json_data), 200)
+
     @app.route('/api/v1/admin/logout', methods=['GET'])
     @jwt_required(refresh=True)
     def logout_admin():
