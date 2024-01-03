@@ -11,6 +11,8 @@
 [Ask Reset Password Token](#create-reset-password-token)  
 [Reset Password](#reset-password)  
 [Get Admin Accounts](#get-admin-accounts)  
+[Deactivate Admin Account](#deactivate-admin-account)  
+[Reactivate Admin Account](#reactivate-admin-account)  
 
 ## Endpoints description
 ### Login 2FA
@@ -41,7 +43,7 @@ RESPONSE
         "updated_date": "2023-12-27T18:00:40.916883Z"
     },
     "jwt_token": "eyJhbG...",
-    "message": "Login successful",
+    "message": "success_login",
     "refresh_token": "eyJhbGci...",
     "status": true
 }
@@ -63,7 +65,7 @@ RESPONSE
 ```
 {
     "jwt_token": "eyJhb...",
-    "message": "Refresh successful",
+    "message": "success_refresh",
     "status": true
 }
 ```
@@ -83,7 +85,7 @@ X-AUTH-USER: "Refresh_token"
 RESPONSE
 ```
 {
-    "message": "Logout successful",
+    "message": "success_logout",
     "status": true
 }
 ```
@@ -238,6 +240,59 @@ RESPONSE
         }
     ],
     "message": "successful_admin_accounts",
+    "status": true
+}
+```
+
+
+### Deactivate admin account
+_Authorized user: Admin_  
+Deactivate an admin account.  
+
+URI
+```
+POST /api/v1/admin/deactivate
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON
+```
+{
+    "admin_uuid": ""
+}
+```
+RESPONSE
+```
+{
+    "message": "success_admin_deactivated",
+    "status": true
+}
+```
+
+### Reactivate admin account
+_Authorized user: Admin_  
+Reactivate an admin account.  
+
+URI
+```
+POST /api/v1/admin/reactivate
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON
+```
+{
+    "admin_uuid": ""
+}
+```
+RESPONSE
+```
+{
+    "message": "success_admin_reactivated",
     "status": true
 }
 ```
