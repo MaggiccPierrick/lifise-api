@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, create_access_token, create_refresh
 from os import environ as env
 
 from utils.orm.admin import AdminAccount
+from utils.orm.filter import Filter
 from utils.api import http_error_400, json_data_required, admin_required
 from utils.email import Email
 from utils.redis_db import Redis
@@ -68,7 +69,7 @@ def add_routes(app):
             }
         return make_response(jsonify(json_data), http_code)
 
-    @app.route('/api/v1/admin/login/refresh', methods=['GET'])
+    @app.route('/api/v1/login/refresh', methods=['GET'])
     @jwt_required(refresh=True)
     def refresh_login():
         """
@@ -84,11 +85,11 @@ def add_routes(app):
         }
         return make_response(jsonify(json_data), 200)
 
-    @app.route('/api/v1/admin/logout', methods=['GET'])
+    @app.route('/api/v1/logout', methods=['GET'])
     @jwt_required(refresh=True)
-    def logout_admin():
+    def logout_user():
         """
-        Logout the admin
+        Logout the user
         :return:
         """
         jti = get_jwt()["jti"]
@@ -249,3 +250,48 @@ def add_routes(app):
         if not email_sent:
             json_data['error'] = 'Error while sending email confirmation'
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin', methods=['GET'])
+    @jwt_required()
+    @admin_required
+    def get_admin_accounts():
+        """
+        Get all admin accounts
+        :return:
+        """
+        deactivated = 0
+        if request.args.get('deactivated') == 'true':
+            deactivated = 1
+
+        admin = AdminAccount()
+        filter_obj = Filter()
+        filter_obj.add('deactivated', str(deactivated))
+        admin_accounts = admin.list(filter_object=filter_obj)
+        admin_list = []
+        for admin_account in admin_accounts:
+            email_validated = False
+            if admin_account.get('email_validated') == 1:
+                email_validated = True
+            account_deactivated = True
+            if admin_account.get('deactivated') == 0:
+                account_deactivated = False
+
+            admin_list.append({
+                'email_address': admin_account.get('email'),
+                'admin_uuid': admin_account.get('admin_uuid'),
+                'firstname': admin_account.get('firstname'),
+                'lastname': admin_account.get('lastname'),
+                'email_validated': email_validated,
+                'last_login_date': admin_account.get('last_login'),
+                'created_date': admin_account.get('created_date'),
+                'updated_date': admin_account.get('updated_date'),
+                'deactivated': account_deactivated,
+                'deactivated_date': admin_account.get('deactivated_date')
+            })
+
+        json_data = {
+            'status': True,
+            'message': 'successful_admin_accounts',
+            'admin_accounts': admin_list
+        }
+        return make_response(jsonify(json_data), 200)
