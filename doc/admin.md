@@ -45,6 +45,23 @@ RESPONSE
 }
 ```
 
+### Login refresh
+_Authorized user: Admin_  
+Refresh login with JWT refresh token  
+
+URI
+```
+GET /api/v1/admin/login/refresh
+```
+RESPONSE
+```
+{
+    "jwt_token": "eyJhb...",
+    "message": "Refresh successful",
+    "status": true
+}
+```
+
 ### Logout
 _Authorized user: Admin_  
 Logout from the platform  
