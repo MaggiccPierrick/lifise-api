@@ -4,7 +4,7 @@ from os import environ as env
 
 from utils.orm.admin import AdminAccount
 from utils.orm.filter import Filter
-from utils.api import http_error_400, json_data_required, admin_required
+from utils.api import http_error_400, http_error_401, json_data_required, admin_required
 from utils.email import Email
 from utils.redis_db import Redis
 
@@ -80,7 +80,7 @@ def add_routes(app):
         jwt_token = create_access_token(identity=identity)
         json_data = {
             'status': True,
-            'message': 'Refresh successful',
+            'message': 'success_refresh',
             'jwt_token': jwt_token
         }
         return make_response(jsonify(json_data), 200)
@@ -99,14 +99,14 @@ def add_routes(app):
             app.logger.warning("Connection to Redis failed - error= {0}".format(e))
             json_data = {
                 'status': False,
-                'message': 'Logout failed'
+                'message': 'error_logout'
             }
             response = make_response(jsonify(json_data), 503)
             response.headers['Retry-After'] = '10'
             return response
         json_data = {
             'status': True,
-            'message': 'Logout successful'
+            'message': 'success_logout'
         }
         return make_response(jsonify(json_data), 200)
 
@@ -295,3 +295,55 @@ def add_routes(app):
             'admin_accounts': admin_list
         }
         return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/admin/deactivate', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @admin_required
+    def deactivate_admin():
+        """
+        Deactivate an admin account
+        :return:
+        """
+        mandatory_keys = ['admin_uuid']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        admin_uuid = request.json.get('admin_uuid')
+        connected_admin_uuid = get_jwt_identity().get('admin_uuid')
+        if connected_admin_uuid == admin_uuid:
+            return http_error_401("unauthorized")
+
+        admin = AdminAccount()
+        status, http_code, message = admin.deactivate_admin(admin_uuid=admin_uuid)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/reactivate', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @admin_required
+    def reactivate_admin():
+        """
+        Reactivate an admin account
+        :return:
+        """
+        mandatory_keys = ['admin_uuid']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        admin_uuid = request.json.get('admin_uuid')
+        connected_admin_uuid = get_jwt_identity().get('admin_uuid')
+        if connected_admin_uuid == admin_uuid:
+            return http_error_401("unauthorized")
+
+        admin = AdminAccount()
+        status, http_code, message = admin.reactivate_admin(admin_uuid=admin_uuid)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
