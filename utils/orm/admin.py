@@ -101,6 +101,7 @@ class AdminAccount(Abstract):
             email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
             self.set('email', email_address)
             self.set('email_hash', email_address_hash)
+            self.set('email_validated', 0)
             updated = True
 
         if old_password is not None and new_password is not None:
@@ -199,8 +200,8 @@ class AdminAccount(Abstract):
             return False, 400, "Bad email address format"
 
         email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
-        self.load({'email_hash': email_address_hash, 'otp_token': token, 'deactivated': 0})
-        if self.get('admin_uuid') is not None:
+        self.load({'email_hash': email_address_hash, 'deactivated': 0})
+        if self.get('admin_uuid') is not None and self.get('otp_token') == token:
             if self.get('otp_expiration') < str(datetime.utcnow()):
                 self.set('otp_token', None)
                 self.set('otp_expiration', None)
@@ -224,7 +225,7 @@ class AdminAccount(Abstract):
         login_hash, email_salt = generate_hash(data_to_hash=login, salt=env['APP_DB_HASH_SALT'])
         self.load({'email_hash': login_hash, 'deactivated': '0'})
         if self.get('admin_uuid') is None:
-            return False, 401, "Login failed"
+            return False, 401, "error_login"
 
         password_hash, password_salt = generate_hash(data_to_hash=password + env['APP_PASSWORD_SALT'],
                                                      salt=self.get('user_salt'))
@@ -235,20 +236,49 @@ class AdminAccount(Abstract):
                 validity_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
                 self.set('otp_expiration', validity_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
                 self.update()
-                return True, 200, "2FA token set"
+                return True, 200, "success_token_set"
             else:
                 current_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 if self.get('otp_token') is None:
-                    return False, 401, "Login failed"
+                    return False, 401, "error_login"
                 if token == self.get('otp_token'):
                     if self.get('otp_expiration') > current_time:
                         self.set('last_login', current_time)
                         self.set('otp_token', None)
                         self.set('otp_expiration', None)
+                        self.set('email_validated', 1)
                         self.update()
-                        return True, 200, "Login successful"
+                        return True, 200, "success_login"
                     else:
-                        return False, 401, "Token expired"
-                return False, 401, "Login failed"
+                        return False, 401, "error_token_expired"
+                return False, 401, "error_login"
         else:
-            return False, 401, "Login failed"
+            return False, 401, "error_login"
+
+    def deactivate_admin(self, admin_uuid):
+        """
+        Deactivate an admin user
+        :param admin_uuid:
+        :return:
+        """
+        self.load({'admin_uuid': admin_uuid})
+        if self.get('admin_uuid') is not None:
+            self.set('deactivated', 1)
+            self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+            self.update()
+            return True, 200, "success_admin_deactivated"
+        return False, 400, "error_not_exist"
+
+    def reactivate_admin(self, admin_uuid):
+        """
+        Reactivate an admin user
+        :param admin_uuid:
+        :return:
+        """
+        self.load({'admin_uuid': admin_uuid})
+        if self.get('admin_uuid') is not None:
+            self.set('deactivated', 0)
+            self.set('deactivated_date', None)
+            self.update()
+            return True, 200, "success_admin_reactivated"
+        return False, 400, "error_not_exist"
