@@ -165,6 +165,13 @@ def add_routes(app):
         admin = AdminAccount()
         status, http_code, message = admin.create_account(creator_id=admin_uuid, email_address=email_address,
                                                           firstname=firstname, lastname=lastname)
+        if status is True:
+            subject = "MetaBank Admin"
+            content = "Un compte administrateur vient d'être créé avec votre adresse email.\n" \
+                      "Rendez vous sur la page suivante pour créer votre mot de passe :\n" \
+                      "{0}".format(env['APP_FRONT_URL'])
+            email = Email(app)
+            email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
         json_data = {
             'status': status,
             'message': message,
