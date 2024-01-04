@@ -113,7 +113,7 @@ JSON
 RESPONSE
 ```
 {
-    "message": "Admin account successfully created",
+    "message": "success_admin_creation",
     "status": true,
     "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
 }

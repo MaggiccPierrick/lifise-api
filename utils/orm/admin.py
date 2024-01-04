@@ -36,20 +36,16 @@ class AdminAccount(Abstract):
         :param lastname:
         :return:
         """
-        if len(firstname) > 30:
-            return False, 400, "firstname is too long"
-        if len(firstname) < 2:
-            return False, 400, "firstname is too short"
-        if len(lastname) > 30:
-            return False, 400, "lastname is too long"
-        if len(lastname) < 2:
-            return False, 400, "lastname is too short"
+        if len(firstname) < 2 or len(firstname) > 30:
+            return False, 400, "error_firstname"
+        if len(lastname) < 2 or len(lastname) > 30:
+            return False, 400, "error_lastname"
 
         if check_email_format(email_address) is False:
-            return False, 400, "Bad email address format"
+            return False, 400, "error_email"
 
         if self.is_existing(email_address=email_address) is True:
-            return False, 400, "Email address already exists"
+            return False, 400, "error_exist"
 
         password = str(uuid4())[24:]
         hash_password, unique_salt = generate_hash(password + env['APP_PASSWORD_SALT'])
@@ -70,9 +66,9 @@ class AdminAccount(Abstract):
             self.insert()
         except Exception as e:
             self.log.error("User registration db error = {0}".format(e))
-            return False, 500, "Error while registering admin"
+            return False, 500, "error_admin_creation"
 
-        return True, 200, "Admin account successfully created"
+        return True, 200, "success_admin_creation"
 
     def update_account(self, email_address: str = None, firstname: str = None, lastname: str = None,
                        old_password: str = None, new_password: str = None):
