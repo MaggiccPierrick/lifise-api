@@ -69,6 +69,27 @@ class UserAccount(Abstract):
 
         return True, 200, "success_user_register"
 
+    def check_otp_token(self, token: str):
+        """
+        Check the otp token for the loaded user
+        :param token:
+        :return:
+        """
+        if self.get('user_uuid') is not None and self.get('otp_token') == token:
+            if self.get('otp_expiration') < str(datetime.utcnow()):
+                self.set('otp_token', None)
+                self.set('otp_expiration', None)
+                self.update()
+                return False, 401, "error_expired"
+            else:
+                self.set('otp_token', None)
+                self.set('otp_expiration', None)
+                self.set('email_validated', 1)
+                self.update()
+                return True, 200, "success_validated"
+        else:
+            return False, 401, "error_token"
+
     def is_existing(self, email_address):
         """
         Verify if the given account parameters already exist in db

@@ -45,3 +45,26 @@ def add_routes(app):
             'message': message
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/validate', methods=['POST'])
+    @json_data_required
+    def validate_user():
+        """
+        Activate user account
+        :return:
+        """
+        mandatory_keys = ['user_uuid', 'token']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        user_uuid = request.json.get('user_uuid')
+        token = request.json.get('token')
+
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        status, http_code, message = user_account.check_otp_token(token=token)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)

@@ -29,3 +29,26 @@ RESPONSE
     "status": true
 }
 ```
+
+### Validate account
+_Authorized user: User_  
+Validate the user account.  
+
+URI
+```
+POST /api/v1/user/validate
+```
+JSON
+```
+{
+    "user_uuid": "f601edad-0c82-4e6c-8775-659c07fc9c2e",
+    "token": "180745"
+}
+```
+RESPONSE
+```
+{
+    "message": "success_validated",
+    "status": true
+}
+```
