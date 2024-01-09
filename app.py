@@ -9,7 +9,7 @@ from os import environ as env
 
 from utils.log import Logger
 from utils.redis_db import Redis
-from api_routes import admin
+from api_routes import admin, user
 
 load_dotenv(dotenv_path="conf/metabank.env")
 
@@ -50,6 +50,7 @@ app.config['MAIL_PASSWORD'] = env['EMAIL_PASSWORD']
 app.config['MAIL_USE_TLS'] = env['EMAIL_TLS']
 
 admin.add_routes(app)
+user.add_routes(app)
 
 # init logger
 log_level = int(env['LOG_LEVEL'])

@@ -169,7 +169,7 @@ def add_routes(app):
             subject = "MetaBank Admin"
             content = "Un compte administrateur vient d'être créé avec votre adresse email.\n" \
                       "Rendez vous sur la page suivante pour créer votre mot de passe :\n" \
-                      "{0}".format(env['APP_FRONT_URL'])
+                      "{0}/admin/signin".format(env['APP_FRONT_URL'])
             email = Email(app)
             email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
         json_data = {

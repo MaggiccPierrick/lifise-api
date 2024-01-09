@@ -1,4 +1,4 @@
-# MetaBank API - Admin features
+# MetaBank API - Admin related features
   
 <i>This documentation will be updated after each update of the platform.</i>  
 
