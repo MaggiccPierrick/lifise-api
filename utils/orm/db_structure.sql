@@ -23,3 +23,23 @@ CREATE TABLE IF NOT EXISTS `admin` (
     `deactivated_date` CHAR(30) DEFAULT NULL,
     PRIMARY KEY(`admin_uuid`)
 );
+
+CREATE TABLE IF NOT EXISTS `user` (
+    `user_uuid` CHAR(36) UNIQUE NOT NULL,
+    `firstname` TEXT DEFAULT NULL,
+    `lastname` TEXT DEFAULT NULL,
+    `birthdate` TEXT DEFAULT NULL,
+    `email` TEXT NOT NULL,
+    `email_hash` CHAR(128) NOT NULL,
+    `email_validated` INTEGER NOT NULL,
+    `otp_token` TEXT DEFAULT NULL,
+    `otp_expiration` CHAR(30) DEFAULT NULL,
+    `public_address` TEXT DEFAULT NULL,
+    `last_login` CHAR(30) DEFAULT NULL,
+    `creator_id` CHAR(36) DEFAULT NULL,
+    `created_date` CHAR(30) NOT NULL,
+    `updated_date` CHAR(30) DEFAULT NULL,
+    `deactivated` INTEGER NOT NULL,
+    `deactivated_date` CHAR(30) DEFAULT NULL,
+    PRIMARY KEY(`user_uuid`)
+);
