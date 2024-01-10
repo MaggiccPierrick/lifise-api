@@ -4,8 +4,7 @@ from os import environ as env
 from datetime import datetime
 
 from utils.orm.user import UserAccount
-from utils.orm.filter import Filter
-from utils.api import http_error_400, http_error_401, json_data_required, admin_required
+from utils.api import http_error_400, http_error_401, json_data_required
 from utils.email import Email
 from utils.redis_db import Redis
 from utils.magic_link import MagicLink
@@ -99,7 +98,8 @@ def add_routes(app):
             status, http_code, message = user_account.login(magiclink_issuer=user_data.get('issuer'))
             if status is False and user_account.get('user_uuid') is None:
                 status, http_code, message = user_account.register(email_address=user_data.get('email'),
-                                                                   magiclink_issuer=user_data.get('issuer'))
+                                                                   magiclink_issuer=user_data.get('issuer'),
+                                                                   public_address=user_data.get('public_address'))
                 if status is False:
                     json_data = {
                         'status': status,
@@ -135,7 +135,8 @@ def add_routes(app):
                 'firstname': user_account.get('firstname'),
                 'lastname': user_account.get('lastname'),
                 'created_date': user_account.get('created_date'),
-                'updated_date': user_account.get('updated_date')
+                'updated_date': user_account.get('updated_date'),
+                'public_address': user_account.get('public_address')
             }
         }
         return make_response(jsonify(json_data), http_code)
@@ -231,9 +232,13 @@ def add_routes(app):
             'status': True,
             'message': 'success_account',
             'account': {
+                'email_address': user_account.get('email'),
+                'user_uuid': user_account.get('user_uuid'),
                 'firstname': user_account.get('firstname'),
                 'lastname': user_account.get('lastname'),
-                'birthdate': user_account.get('birthdate')
+                'created_date': user_account.get('created_date'),
+                'updated_date': user_account.get('updated_date'),
+                'public_address': user_account.get('public_address')
             }
         }
         return make_response(jsonify(json_data), 200)
