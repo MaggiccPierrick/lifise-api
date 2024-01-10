@@ -82,7 +82,7 @@ class UserAccount(Abstract):
         :return:
         """
         if user_uuid is None and magiclink_issuer is None:
-            return False, 400, 'error_bad_request'
+            return False, 400, "error_bad_request"
         if user_uuid is not None:
             self.load({'user_uuid': user_uuid})
         else:
@@ -128,15 +128,45 @@ class UserAccount(Abstract):
             return True
         return False
 
-    def update_account(self, public_address: str, magiclink_issuer: str = None):
+    def update_account(self, public_address: str = None, magiclink_issuer: str = None, firstname: str = None,
+                       lastname: str = None, birthdate: str = None):
         """
         Update user data
         :param public_address:
         :param magiclink_issuer:
+        :param firstname:
+        :param lastname:
+        :param birthdate:
         :return:
         """
-        self.set('public_address', public_address)
-        self.set('magiclink_issuer', magiclink_issuer)
-        self.set('updated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
-        self.update()
-        return True
+        updated = False
+        if public_address is not None:
+            self.set('public_address', public_address)
+            updated = True
+
+        if magiclink_issuer is not None:
+            self.set('magiclink_issuer', magiclink_issuer)
+            updated = True
+
+        if firstname is not None and 2 <= len(firstname) < 30:
+            self.set('firstname', firstname)
+            updated = True
+
+        if lastname is not None and 2 <= len(lastname) < 30:
+            self.set('lastname', lastname)
+            updated = True
+
+        if birthdate is not None:
+            try:
+                datetime.strptime(birthdate, "%Y-%m-%d")
+            except ValueError:
+                return False, 400, "error_birthdate"
+            self.set('birthdate', birthdate)
+            updated = True
+
+        if updated is True:
+            self.set('updated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+            self.update()
+            return True, 200, "success_account_updated"
+        else:
+            return False, 400, "error_account_update"
