@@ -46,9 +46,25 @@ class MagicLink:
 
         issuer = self.token.get_issuer(did_token=did_token)
         magic_response = self.user.get_metadata_by_issuer(issuer)
-        user_metadata = json.loads(magic_response.content)
-        if user_metadata.get('status') != 'ok':
+        if magic_response.status_code >= 300:
+            return False, 401, 'error_magic_link', None
+        response = json.loads(magic_response.content)
+        if response.get('status') != 'ok':
             return False, 401, 'error_magic_link', None
 
-        user_data = user_metadata.get('data')
+        user_data = response.get('data')
         return True, 200, 'success_login', user_data
+
+    def logout(self, issuer):
+        """
+        Logout the user from Magic Link
+        :param issuer:
+        :return:
+        """
+        magic_response = self.user.logout_by_issuer(issuer)
+        if magic_response.status_code >= 300:
+            return False, 401, 'error_magic_link'
+        response = json.loads(magic_response.content)
+        if response.get('status') != 'ok':
+            return False, 401, 'error_magic_link'
+        return True, 200, 'success_logout'

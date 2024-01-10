@@ -6,6 +6,8 @@
 [Register User](#register)  
 [Validate Account](#validate-account)  
 [Login](#login)  
+[Login](#login-refresh)  
+[Login](#logout)  
 
 ## Endpoints description
 ### Register
@@ -84,6 +86,47 @@ RESPONSE
     "jwt_token": "eyJhbG...",
     "message": "success_login",
     "refresh_token": "eyJhbGci...",
+    "status": true
+}
+```
+
+### Login refresh
+_Authorized user: All_  
+Refresh login with JWT refresh token  
+
+URI
+```
+GET /api/v1/login/refresh
+```
+HEADER
+```
+X-AUTH-USER: "Refresh_token"
+```
+RESPONSE
+```
+{
+    "jwt_token": "eyJhb...",
+    "message": "success_refresh",
+    "status": true
+}
+```
+
+### Logout
+_Authorized user: All_  
+Logout from the platform  
+
+URI
+```
+GET /api/v1/logout
+```
+HEADER
+```
+X-AUTH-USER: "Refresh_token"
+```
+RESPONSE
+```
+{
+    "message": "success_logout",
     "status": true
 }
 ```
