@@ -192,3 +192,48 @@ def add_routes(app):
             'message': 'success_logout'
         }
         return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/user/account', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    def update_user_account():
+        """
+        Update personal account information of the user
+        :return:
+        """
+        firstname = request.json.get('firstname')
+        lastname = request.json.get('lastname')
+        birthdate = request.json.get('birthdate')
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        status, http_code, message = user_account.update_account(firstname=firstname, lastname=lastname,
+                                                                 birthdate=birthdate)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/account', methods=['GET'])
+    @jwt_required()
+    def get_user_account():
+        """
+        Return personal account information
+        :return:
+        """
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        json_data = {
+            'status': True,
+            'message': 'success_account',
+            'account': {
+                'firstname': user_account.get('firstname'),
+                'lastname': user_account.get('lastname'),
+                'birthdate': user_account.get('birthdate')
+            }
+        }
+        return make_response(jsonify(json_data), 200)

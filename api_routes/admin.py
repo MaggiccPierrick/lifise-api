@@ -280,7 +280,7 @@ def add_routes(app):
         admin_uuid = request.json.get('admin_uuid')
         connected_admin_uuid = get_jwt_identity().get('admin_uuid')
         if connected_admin_uuid == admin_uuid:
-            return http_error_401("unauthorized")
+            return http_error_401()
 
         admin = AdminAccount()
         status, http_code, message = admin.deactivate_admin(admin_uuid=admin_uuid)
@@ -306,7 +306,7 @@ def add_routes(app):
         admin_uuid = request.json.get('admin_uuid')
         connected_admin_uuid = get_jwt_identity().get('admin_uuid')
         if connected_admin_uuid == admin_uuid:
-            return http_error_401("unauthorized")
+            return http_error_401()
 
         admin = AdminAccount()
         status, http_code, message = admin.reactivate_admin(admin_uuid=admin_uuid)

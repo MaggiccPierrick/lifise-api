@@ -130,3 +130,56 @@ RESPONSE
     "status": true
 }
 ```
+
+### Update account
+_Authorized user: User_  
+Update personal information of user account.  
+Only fields to be updated must be given.  
+
+URI
+```
+POST /api/v1/user/account
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON
+```
+{
+    "firstname": "John",
+    "lastname": "Doe",
+    "birthdate": "1900-01-01"
+}
+```
+RESPONSE
+```
+{
+    "message": "success_account_updated",
+    "status": true
+}
+```
+
+### Get account information
+_Authorized user: User_  
+
+URI
+```
+GET /api/v1/user/account
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "account": {
+        "birthdate": "1900-01-01",
+        "firstname": "John",
+        "lastname": "Doe"
+    },
+    "message": "success_account",
+    "status": true
+}
+```
