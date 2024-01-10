@@ -1,13 +1,13 @@
 from flask import jsonify, make_response, request
-from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity, get_jwt
+from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity
 from os import environ as env
 from datetime import datetime
 
 from utils.orm.admin import AdminAccount
+from utils.orm.user import UserAccount
 from utils.orm.filter import Filter
 from utils.api import http_error_400, http_error_401, json_data_required, admin_required
 from utils.email import Email
-from utils.redis_db import Redis
 
 
 def add_routes(app):
@@ -315,3 +315,50 @@ def add_routes(app):
             'message': message
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/users', methods=['GET'])
+    @jwt_required()
+    @admin_required
+    def get_users_accounts():
+        """
+        Get all users accounts
+        :return:
+        """
+        deactivated = 0
+        if request.args.get('deactivated') == 'true':
+            deactivated = 1
+
+        user_account = UserAccount()
+        filter_obj = Filter()
+        filter_obj.add('deactivated', str(deactivated))
+        user_accounts = user_account.list(filter_object=filter_obj, order='lastname', asc='ASC')
+        users_list = []
+        for current_user in user_accounts:
+            email_validated = False
+            if current_user.get('email_validated') == 1:
+                email_validated = True
+            account_deactivated = True
+            if current_user.get('deactivated') == 0:
+                account_deactivated = False
+
+            users_list.append({
+                'email_address': current_user.get('email'),
+                'user_uuid': current_user.get('user_uuid'),
+                'firstname': current_user.get('firstname'),
+                'lastname': current_user.get('lastname'),
+                'birthdate': current_user.get('birthdate'),
+                'email_validated': email_validated,
+                'last_login_date': current_user.get('last_login'),
+                'created_date': current_user.get('created_date'),
+                'updated_date': current_user.get('updated_date'),
+                'deactivated': account_deactivated,
+                'deactivated_date': current_user.get('deactivated_date'),
+                'public_address': current_user.get('public_address')
+            })
+
+        json_data = {
+            'status': True,
+            'message': 'successful_user_accounts',
+            'user_accounts': users_list
+        }
+        return make_response(jsonify(json_data), 200)
