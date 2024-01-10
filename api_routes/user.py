@@ -139,3 +139,56 @@ def add_routes(app):
             }
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/login/refresh', methods=['GET'])
+    @jwt_required(refresh=True)
+    def refresh_login():
+        """
+        Refresh the jwt token (admin and user)
+        :return:
+        """
+        identity = get_jwt_identity()
+        jwt_token = create_access_token(identity=identity)
+        json_data = {
+            'status': True,
+            'message': 'success_refresh',
+            'jwt_token': jwt_token
+        }
+        return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/logout', methods=['GET'])
+    @jwt_required(refresh=True)
+    def logout():
+        """
+        Logout : works for user and admin
+        :return:
+        """
+        jti = get_jwt()["jti"]
+        user_uuid = get_jwt_identity().get('user_uuid')
+        if user_uuid is not None:
+            user_account = UserAccount()
+            user_account.load({'user_uuid': user_uuid})
+            magic_link = MagicLink()
+            status, http_code, message = magic_link.logout(issuer=user_account.get('magiclink_issuer'))
+            if status is False:
+                json_data = {
+                    'status': False,
+                    'message': 'error_logout'
+                }
+                return make_response(jsonify(json_data), 503)
+        try:
+            Redis().get_connection().set(jti, "revoked", ex=int(env['JWT_REFRESH_TOKEN_EXPIRES']))
+        except (ConnectionRefusedError, ConnectionError) as e:
+            app.logger.warning("Connection to Redis failed - error= {0}".format(e))
+            json_data = {
+                'status': False,
+                'message': 'error_logout'
+            }
+            response = make_response(jsonify(json_data), 503)
+            response.headers['Retry-After'] = '10'
+            return response
+        json_data = {
+            'status': True,
+            'message': 'success_logout'
+        }
+        return make_response(jsonify(json_data), 200)
