@@ -296,3 +296,39 @@ RESPONSE
     "status": true
 }
 ```
+
+### Get user accounts
+_Authorized user: Admin_  
+Get all user accounts.  
+
+URI
+```
+GET /api/v1/admin/users
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "message": "successful_user_accounts",
+    "status": true,
+    "user_accounts": [
+        {
+            "birthdate": "1234-12-25",
+            "created_date": "2024-01-10T13:24:26.346968Z",
+            "deactivated": false,
+            "deactivated_date": null,
+            "email_address": "john@doe.com",
+            "email_validated": false,
+            "firstname": "John",
+            "last_login_date": "2024-01-10T14:19:52.570413Z",
+            "lastname": "Doe",
+            "public_address": "Ox...,
+            "updated_date": "2024-01-10T14:49:08.082977Z",
+            "user_uuid": "ddeba27c-3d95-450d-b971-33db6e9fbbec"
+        }
+    ]
+}
+```
