@@ -80,6 +80,7 @@ RESPONSE
         "email_address": "john@doe.com",
         "firstname": "John",
         "lastname": "D.",
+        "public_address": "0x...",
         "updated_date": "2023-12-27T18:00:40.916883Z",
         "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
@@ -175,9 +176,13 @@ RESPONSE
 ```
 {
     "account": {
-        "birthdate": "1900-01-01",
+        "created_date": "2023-12-27T14:00:04.512864Z",
+        "email_address": "john@doe.com",
         "firstname": "John",
-        "lastname": "Doe"
+        "lastname": "D.",
+        "public_address": "0x...",
+        "updated_date": "2023-12-27T18:00:40.916883Z",
+        "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
     "message": "success_account",
     "status": true
