@@ -73,7 +73,17 @@ JSON
 RESPONSE
 ```
 {
+    "account": {
+        "created_date": "2023-12-27T14:00:04.512864Z",
+        "email_address": "john@doe.com",
+        "firstname": "John",
+        "lastname": "D.",
+        "updated_date": "2023-12-27T18:00:40.916883Z",
+        "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
+    },
+    "jwt_token": "eyJhbG...",
     "message": "success_login",
+    "refresh_token": "eyJhbGci...",
     "status": true
 }
 ```
