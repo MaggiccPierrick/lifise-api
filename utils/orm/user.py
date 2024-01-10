@@ -28,7 +28,7 @@ class UserAccount(Abstract):
         }
 
     def register(self, email_address: str, creator_id: str = None, firstname: str = None, lastname: str = None,
-                 public_address: str = None):
+                 public_address: str = None, magiclink_issuer: str = None):
         """
         Create a new user account
         :param email_address:
@@ -36,6 +36,7 @@ class UserAccount(Abstract):
         :param firstname:
         :param lastname:
         :param public_address:
+        :param magiclink_issuer:
         :return:
         """
         if firstname is not None and (len(firstname) < 2 or len(firstname) > 30):
@@ -63,7 +64,8 @@ class UserAccount(Abstract):
                 'lastname': lastname,
                 'otp_token': otp_token,
                 'otp_expiration': validity_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                'public_address': public_address
+                'public_address': public_address,
+                'magiclink_issuer': magiclink_issuer
             })
             self.insert()
         except Exception as e:

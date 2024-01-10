@@ -95,7 +95,18 @@ def add_routes(app):
             return make_response(jsonify(json_data), http_code)
 
         user_account = UserAccount()
-        if user_uuid is not None:
+        if user_uuid is None:
+            status, http_code, message = user_account.login(magiclink_issuer=user_data.get('issuer'))
+            if status is False and user_account.get('user_uuid') is None:
+                status, http_code, message = user_account.register(email_address=user_data.get('email'),
+                                                                   magiclink_issuer=user_data.get('issuer'))
+                if status is False:
+                    json_data = {
+                        'status': status,
+                        'message': message
+                    }
+                    return make_response(jsonify(json_data), http_code)
+        else:
             status, http_code, message = user_account.login(user_uuid=user_uuid)
             if status is False:
                 json_data = {
@@ -108,16 +119,6 @@ def add_routes(app):
 
             user_account.update_account(public_address=user_data.get('public_address'),
                                         magiclink_issuer=user_data.get('issuer'))
-        else:
-            status, http_code, message = user_account.login(magiclink_issuer=user_data.get('issuer'))
-            if status is False and user_account.get('user_uuid') is None:
-                status, http_code, message = user_account.register(email_address=user_data.get('email'))
-                if status is False:
-                    json_data = {
-                        'status': status,
-                        'message': message
-                    }
-                    return make_response(jsonify(json_data), http_code)
 
         jwt_identity = {'user_uuid': user_account.get('user_uuid'),
                         'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")}
