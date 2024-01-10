@@ -17,7 +17,7 @@ class UserAccount(Abstract):
         Abstract.__init__(self, data, adapter)
         self._table = 'user'
         self._columns = ['user_uuid', 'firstname', 'lastname', 'birthdate', 'email', 'email_hash', 'email_validated',
-                         'otp_token', 'otp_expiration', 'public_address', 'last_login',
+                         'otp_token', 'otp_expiration', 'public_address', 'magiclink_issuer', 'last_login',
                          'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
         self._encrypt_fields = ['email', 'firstname', 'lastname', 'birthdate', 'otp_token', 'public_address']
         self._primary_key = ['user_uuid']
@@ -27,18 +27,21 @@ class UserAccount(Abstract):
             'deactivated': 0
         }
 
-    def register(self, firstname: str, lastname: str, email_address: str, creator_id: str = None):
+    def register(self, email_address: str, creator_id: str = None, firstname: str = None, lastname: str = None,
+                 public_address: str = None, magiclink_issuer: str = None):
         """
         Create a new user account
-        :param firstname:
-        :param lastname:
         :param email_address:
         :param creator_id:
+        :param firstname:
+        :param lastname:
+        :param public_address:
+        :param magiclink_issuer:
         :return:
         """
-        if len(firstname) < 2 or len(firstname) > 30:
+        if firstname is not None and (len(firstname) < 2 or len(firstname) > 30):
             return False, 400, "error_firstname"
-        if len(lastname) < 2 or len(lastname) > 30:
+        if lastname is not None and (len(lastname) < 2 or len(lastname) > 30):
             return False, 400, "error_lastname"
 
         if check_email_format(email_address) is False:
@@ -60,7 +63,9 @@ class UserAccount(Abstract):
                 'firstname': firstname,
                 'lastname': lastname,
                 'otp_token': otp_token,
-                'otp_expiration': validity_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                'otp_expiration': validity_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                'public_address': public_address,
+                'magiclink_issuer': magiclink_issuer
             })
             self.insert()
         except Exception as e:
@@ -68,6 +73,25 @@ class UserAccount(Abstract):
             return False, 500, "error_user_register"
 
         return True, 200, "success_user_register"
+
+    def login(self, user_uuid: str = None, magiclink_issuer: str = None):
+        """
+        Login the user
+        :param user_uuid:
+        :param magiclink_issuer:
+        :return:
+        """
+        if user_uuid is None and magiclink_issuer is None:
+            return False, 400, 'error_bad_request'
+        if user_uuid is not None:
+            self.load({'user_uuid': user_uuid})
+        else:
+            self.load({'magiclink_issuer': magiclink_issuer})
+        if self.get('user_uuid') is None:
+            return False, 401, 'error_not_exist'
+        self.set('last_login', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, 'success_login'
 
     def check_otp_token(self, token: str):
         """
@@ -103,3 +127,16 @@ class UserAccount(Abstract):
         if len(user_accounts) > 0:
             return True
         return False
+
+    def update_account(self, public_address: str, magiclink_issuer: str = None):
+        """
+        Update user data
+        :param public_address:
+        :param magiclink_issuer:
+        :return:
+        """
+        self.set('public_address', public_address)
+        self.set('magiclink_issuer', magiclink_issuer)
+        self.set('updated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True

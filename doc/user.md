@@ -4,6 +4,8 @@
 
 ## Table of contents
 [Register User](#register)  
+[Validate Account](#validate-account)  
+[Login](#login)  
 
 ## Endpoints description
 ### Register
@@ -49,6 +51,29 @@ RESPONSE
 ```
 {
     "message": "success_validated",
+    "status": true
+}
+```
+
+### Login
+_Authorized user: User_  
+Login the user with Magic Link DID token & creates the user if he does not exists in db.  
+
+URI
+```
+POST /api/v1/user/login
+```
+JSON
+```
+{
+    "did_token": "xxx",
+    "user_uuid"             # optional, used for pre-registered users
+}
+```
+RESPONSE
+```
+{
+    "message": "success_login",
     "status": true
 }
 ```
