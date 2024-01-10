@@ -1,6 +1,7 @@
 from flask import jsonify, make_response, request
 from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity, get_jwt
 from os import environ as env
+from datetime import datetime
 
 from utils.orm.admin import AdminAccount
 from utils.orm.filter import Filter
@@ -50,7 +51,8 @@ def add_routes(app):
                 }
                 return make_response(jsonify(json_data), http_code)
 
-            jwt_identity = {'username': admin.get('username'), 'admin_uuid': admin.get('admin_uuid'), 'is_admin': True}
+            jwt_identity = {'admin_uuid': admin.get('admin_uuid'), 'is_admin': True,
+                            'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")}
             jwt_token = create_access_token(identity=jwt_identity)
             refresh_token = create_refresh_token(identity=jwt_identity)
             json_data = {

@@ -1,12 +1,14 @@
 from flask import jsonify, make_response, request
 from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity, get_jwt
 from os import environ as env
+from datetime import datetime
 
 from utils.orm.user import UserAccount
 from utils.orm.filter import Filter
 from utils.api import http_error_400, http_error_401, json_data_required, admin_required
 from utils.email import Email
 from utils.redis_db import Redis
+from utils.magic_link import MagicLink
 
 
 def add_routes(app):
@@ -66,5 +68,73 @@ def add_routes(app):
         json_data = {
             'status': status,
             'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/login', methods=['POST'])
+    @json_data_required
+    def login_user():
+        """
+        Login the user with Magic Link, or create him if not already exists
+        :return:
+        """
+        mandatory_keys = ['did_token']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        did_token = request.json.get('did_token')
+        user_uuid = request.json.get('user_uuid')
+
+        magic_link = MagicLink()
+        status, http_code, message, user_data = magic_link.get_user_info(did_token=did_token)
+        if status is False:
+            json_data = {
+                'status': status,
+                'message': message
+            }
+            return make_response(jsonify(json_data), http_code)
+
+        user_account = UserAccount()
+        if user_uuid is not None:
+            status, http_code, message = user_account.login(user_uuid=user_uuid)
+            if status is False:
+                json_data = {
+                    'status': status,
+                    'message': message
+                }
+                return make_response(jsonify(json_data), http_code)
+            if user_account.get('issuer') is not None and user_account.get('issuer') != user_data.get('issuer'):
+                return http_error_401()
+
+            user_account.update_account(public_address=user_data.get('public_address'),
+                                        magiclink_issuer=user_data.get('issuer'))
+        else:
+            status, http_code, message = user_account.login(magiclink_issuer=user_data.get('issuer'))
+            if status is False and user_account.get('user_uuid') is None:
+                status, http_code, message = user_account.register(email_address=user_data.get('email'))
+                if status is False:
+                    json_data = {
+                        'status': status,
+                        'message': message
+                    }
+                    return make_response(jsonify(json_data), http_code)
+
+        jwt_identity = {'user_uuid': user_account.get('user_uuid'),
+                        'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")}
+        jwt_token = create_access_token(identity=jwt_identity)
+        refresh_token = create_refresh_token(identity=jwt_identity)
+        json_data = {
+            'status': status,
+            'message': message,
+            'jwt_token': jwt_token,
+            'refresh_token': refresh_token,
+            'account': {
+                'email_address': user_account.get('email'),
+                'user_uuid': user_account.get('user_uuid'),
+                'firstname': user_account.get('firstname'),
+                'lastname': user_account.get('lastname'),
+                'created_date': user_account.get('created_date'),
+                'updated_date': user_account.get('updated_date')
+            }
         }
         return make_response(jsonify(json_data), http_code)

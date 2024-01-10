@@ -5,28 +5,28 @@ from functools import wraps
 from utils.orm.admin import AdminAccount
 
 
-def http_error_400(message="bad_request"):
+def http_error_400(message="error_bad_request"):
     """
     Standard response for api request issue
     """
     return make_response(jsonify({'status': False, 'message': message}), 400)
 
 
-def http_error_401(message="unauthorized"):
+def http_error_401(message="error_unauthorized"):
     """
     Standard response for unauthorized api request
     """
     return make_response(jsonify({'status': False, 'message': message}), 401)
 
 
-def http_error_403(message="forbidden"):
+def http_error_403(message="error_forbidden"):
     """
     Standard response for forbidden access
     """
     return make_response(jsonify({'status': False, 'message': message}), 403)
 
 
-def http_error_500(message="internal_error"):
+def http_error_500(message="error_internal_error"):
     """
     Standard response for api request issue
     """
