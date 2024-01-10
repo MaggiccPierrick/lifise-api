@@ -146,7 +146,7 @@ JSON
 RESPONSE
 ```
 {
-    "message": "Admin account successfully updated",
+    "message": "success_account_updated",
     "status": true
 }
 ```

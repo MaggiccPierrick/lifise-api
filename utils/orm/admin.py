@@ -110,10 +110,11 @@ class AdminAccount(Abstract):
                 updated = True
 
         if updated is True:
+            self.set('updated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
             self.update()
-            return True, 200, "Admin account successfully updated"
+            return True, 200, "success_account_updated"
         else:
-            return False, 400, "Account not updated"
+            return False, 400, "error_account_update"
 
     def reset_password(self, email_address: str, new_password: str, reset_token: str):
         """
