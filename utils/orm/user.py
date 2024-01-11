@@ -1,3 +1,5 @@
+import os
+
 from uuid import uuid4
 from datetime import datetime, timedelta
 from os import environ as env
@@ -7,6 +9,19 @@ from utils.orm.abstract import Abstract
 from utils.orm.filter import Filter
 from utils.security import generate_hash
 from utils.email import check_email_format
+from utils.scaleway import ObjectStorage
+
+
+def user_directory(file_type, file_name):
+    """
+    Build user files path in object storage
+    :param file_type:
+    :param file_name:
+    :return:
+    """
+    if file_type not in ['selfie']:
+        return False
+    return "users/{0}/{1}".format(file_type, file_name)
 
 
 class UserAccount(Abstract):
@@ -17,7 +32,7 @@ class UserAccount(Abstract):
         Abstract.__init__(self, data, adapter)
         self._table = 'user'
         self._columns = ['user_uuid', 'firstname', 'lastname', 'birthdate', 'email', 'email_hash', 'email_validated',
-                         'otp_token', 'otp_expiration', 'public_address', 'magiclink_issuer', 'last_login',
+                         'selfie', 'otp_token', 'otp_expiration', 'public_address', 'magiclink_issuer', 'last_login',
                          'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
         self._encrypt_fields = ['email', 'firstname', 'lastname', 'birthdate', 'otp_token', 'public_address']
         self._primary_key = ['user_uuid']
@@ -131,7 +146,7 @@ class UserAccount(Abstract):
         return False
 
     def update_account(self, public_address: str = None, magiclink_issuer: str = None, firstname: str = None,
-                       lastname: str = None, birthdate: str = None):
+                       lastname: str = None, birthdate: str = None, selfie: str = None, selfie_extension: str = None):
         """
         Update user data
         :param public_address:
@@ -139,6 +154,8 @@ class UserAccount(Abstract):
         :param firstname:
         :param lastname:
         :param birthdate:
+        :param selfie:
+        :param selfie_extension:
         :return:
         """
         updated = False
@@ -164,6 +181,21 @@ class UserAccount(Abstract):
             except ValueError:
                 return False, 400, "error_birthdate"
             self.set('birthdate', birthdate)
+            updated = True
+
+        if selfie is not None:
+            storage = ObjectStorage()
+            storage.get_s3_connexion()
+            file_extension = 'jpg'
+            if selfie_extension is not None:
+                file_extension = selfie_extension[:10]
+            filename = "{0}.{1}".format(self.get('user_uuid'), file_extension)
+            path = user_directory(file_type='selfie', file_name=filename)
+            storage_status = storage.store_object(object_content=selfie, object_path=path)
+            if storage_status is False:
+                self.log.warning("Something went wrong when storing user selfie on Object storage")
+                return False, 503, "Failed to store selfie"
+            self.set('selfie', filename)
             updated = True
 
         if updated is True:
@@ -200,3 +232,27 @@ class UserAccount(Abstract):
             self.update()
             return True, 200, "success_user_reactivated"
         return False, 400, "error_not_exist"
+
+    def get_selfie(self, filename=None):
+        """
+        Return selfie image data
+        :param filename:
+        :return:
+        """
+        if filename is not None:
+            file_name, file_extension = os.path.splitext(filename)
+        elif self.get('selfie') is not None:
+            filename = self.get('selfie')
+            file_name, file_extension = os.path.splitext(filename)
+        else:
+            return None, None
+
+        if file_extension is not None:
+            file_extension = file_extension[1:]
+        path = user_directory(file_type='selfie', file_name=filename)
+        storage = ObjectStorage()
+        storage.get_s3_connexion()
+        selfie = storage.get_object(object_path=path)
+        if selfie is not False:
+            return selfie, file_extension
+        return None, None
