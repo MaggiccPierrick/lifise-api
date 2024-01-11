@@ -328,6 +328,8 @@ RESPONSE
             "last_login_date": "2024-01-10T14:19:52.570413Z",
             "lastname": "Doe",
             "public_address": "Ox...,
+            "selfie": "IMG_DATA",
+            "selfie_ext": "png",
             "updated_date": "2024-01-10T14:49:08.082977Z",
             "user_uuid": "ddeba27c-3d95-450d-b971-33db6e9fbbec"
         }
