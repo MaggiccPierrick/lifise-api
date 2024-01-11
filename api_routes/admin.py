@@ -340,7 +340,7 @@ def add_routes(app):
             account_deactivated = True
             if current_user.get('deactivated') == 0:
                 account_deactivated = False
-
+            selfie, selfie_ext = user_account.get_selfie(filename=current_user.get('selfie'))
             users_list.append({
                 'email_address': current_user.get('email'),
                 'user_uuid': current_user.get('user_uuid'),
@@ -353,7 +353,9 @@ def add_routes(app):
                 'updated_date': current_user.get('updated_date'),
                 'deactivated': account_deactivated,
                 'deactivated_date': current_user.get('deactivated_date'),
-                'public_address': current_user.get('public_address')
+                'public_address': current_user.get('public_address'),
+                'selfie': selfie,
+                'selfie_ext': selfie_ext
             })
 
         json_data = {

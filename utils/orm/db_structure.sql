@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `email` TEXT NOT NULL,
     `email_hash` CHAR(128) NOT NULL,
     `email_validated` INTEGER NOT NULL,
+    `selfie` CHAR(50) DEFAULT NULL,
     `otp_token` TEXT DEFAULT NULL,
     `otp_expiration` CHAR(30) DEFAULT NULL,
     `public_address` TEXT DEFAULT NULL,

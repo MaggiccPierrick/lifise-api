@@ -120,6 +120,7 @@ def add_routes(app):
             user_account.update_account(public_address=user_data.get('public_address'),
                                         magiclink_issuer=user_data.get('issuer'))
 
+        selfie, selfie_ext = user_account.get_selfie()
         jwt_identity = {'user_uuid': user_account.get('user_uuid'),
                         'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")}
         jwt_token = create_access_token(identity=jwt_identity)
@@ -137,7 +138,9 @@ def add_routes(app):
                 'birthdate': user_account.get('birthdate'),
                 'created_date': user_account.get('created_date'),
                 'updated_date': user_account.get('updated_date'),
-                'public_address': user_account.get('public_address')
+                'public_address': user_account.get('public_address'),
+                'selfie': selfie,
+                'selfie_ext': selfie_ext
             }
         }
         return make_response(jsonify(json_data), http_code)
@@ -206,13 +209,16 @@ def add_routes(app):
         firstname = request.json.get('firstname')
         lastname = request.json.get('lastname')
         birthdate = request.json.get('birthdate')
+        selfie = request.json.get('selfie')
+        selfie_ext = request.json.get('selfie_ext')
 
         user_uuid = get_jwt_identity().get('user_uuid')
 
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
         status, http_code, message = user_account.update_account(firstname=firstname, lastname=lastname,
-                                                                 birthdate=birthdate)
+                                                                 birthdate=birthdate, selfie=selfie,
+                                                                 selfie_extension=selfie_ext)
         json_data = {
             'status': status,
             'message': message
@@ -229,6 +235,7 @@ def add_routes(app):
         user_uuid = get_jwt_identity().get('user_uuid')
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
+        selfie, selfie_ext = user_account.get_selfie()
         json_data = {
             'status': True,
             'message': 'success_account',
@@ -240,7 +247,9 @@ def add_routes(app):
                 'birthdate': user_account.get('birthdate'),
                 'created_date': user_account.get('created_date'),
                 'updated_date': user_account.get('updated_date'),
-                'public_address': user_account.get('public_address')
+                'public_address': user_account.get('public_address'),
+                'selfie': selfie,
+                'selfie_ext': selfie_ext
             }
         }
         return make_response(jsonify(json_data), 200)

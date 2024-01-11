@@ -6,8 +6,10 @@
 [Register User](#register)  
 [Validate Account](#validate-account)  
 [Login](#login)  
-[Login](#login-refresh)  
-[Login](#logout)  
+[Refresh Login](#login-refresh)  
+[Logout](#logout)  
+[Update Account](#update-account)  
+[Get Account](#get-account-information)  
 
 ## Endpoints description
 ### Register
@@ -82,6 +84,8 @@ RESPONSE
         "firstname": "John",
         "lastname": "D.",
         "public_address": "0x...",
+        "selfie": "IMG_DATA",
+        "selfie_ext": "png",
         "updated_date": "2023-12-27T18:00:40.916883Z",
         "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
@@ -151,7 +155,9 @@ JSON
 {
     "firstname": "John",
     "lastname": "Doe",
-    "birthdate": "1900-01-01"
+    "birthdate": "1900-01-01",
+    "selfie": "IMG_DATA",
+    "selfie_ext": "png"                # type of uploaded file. Optional, 'jpg' by default.
 }
 ```
 RESPONSE
@@ -183,6 +189,8 @@ RESPONSE
         "firstname": "John",
         "lastname": "D.",
         "public_address": "0x...",
+        "selfie": "IMG_DATA",
+        "selfie_ext": "png",
         "updated_date": "2023-12-27T18:00:40.916883Z",
         "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
