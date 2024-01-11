@@ -13,6 +13,9 @@
 [Get Admin Accounts](#get-admin-accounts)  
 [Deactivate Admin Account](#deactivate-admin-account)  
 [Reactivate Admin Account](#reactivate-admin-account)  
+[Get User Accounts](#get-user-accounts)  
+[Deactivate User Account](#deactivate-user-account)  
+[Reactivate User Account](#reactivate-user-account)  
 
 ## Endpoints description
 ### Login 2FA
@@ -244,7 +247,6 @@ RESPONSE
 }
 ```
 
-
 ### Deactivate admin account
 _Authorized user: Admin_  
 Deactivate an admin account.  
@@ -330,5 +332,57 @@ RESPONSE
             "user_uuid": "ddeba27c-3d95-450d-b971-33db6e9fbbec"
         }
     ]
+}
+```
+
+### Deactivate user account
+_Authorized user: Admin_  
+Deactivate a user account.  
+
+URI
+```
+POST /api/v1/admin/user/deactivate
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON
+```
+{
+    "user_uuid": ""
+}
+```
+RESPONSE
+```
+{
+    "message": "success_user_deactivated",
+    "status": true
+}
+```
+
+### Reactivate user account
+_Authorized user: Admin_  
+Reactivate a user account.  
+
+URI
+```
+POST /api/v1/admin/user/reactivate
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON
+```
+{
+    "user_uuid": ""
+}
+```
+RESPONSE
+```
+{
+    "message": "success_user_reactivated",
+    "status": true
 }
 ```

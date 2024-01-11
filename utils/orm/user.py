@@ -89,6 +89,8 @@ class UserAccount(Abstract):
             self.load({'magiclink_issuer': magiclink_issuer})
         if self.get('user_uuid') is None:
             return False, 401, 'error_not_exist'
+        if self.get('deactivated') == 1:
+            return False, 401, 'error_deactivated'
         self.set('last_login', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         self.update()
         return True, 200, 'success_login'
@@ -170,3 +172,31 @@ class UserAccount(Abstract):
             return True, 200, "success_account_updated"
         else:
             return False, 400, "error_account_update"
+
+    def deactivate_user(self, user_uuid):
+        """
+        Deactivate a user
+        :param user_uuid:
+        :return:
+        """
+        self.load({'user_uuid': user_uuid})
+        if self.get('user_uuid') is not None:
+            self.set('deactivated', 1)
+            self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+            self.update()
+            return True, 200, "success_user_deactivated"
+        return False, 400, "error_not_exist"
+
+    def reactivate_user(self, user_uuid):
+        """
+        Reactivate a user
+        :param user_uuid:
+        :return:
+        """
+        self.load({'user_uuid': user_uuid})
+        if self.get('user_uuid') is not None:
+            self.set('deactivated', 0)
+            self.set('deactivated_date', None)
+            self.update()
+            return True, 200, "success_user_reactivated"
+        return False, 400, "error_not_exist"

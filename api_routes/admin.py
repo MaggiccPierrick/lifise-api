@@ -362,3 +362,49 @@ def add_routes(app):
             'user_accounts': users_list
         }
         return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/admin/user/deactivate', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @admin_required
+    def deactivate_user():
+        """
+        Deactivate a user account
+        :return:
+        """
+        mandatory_keys = ['user_uuid']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        user_uuid = request.json.get('user_uuid')
+
+        user_account = UserAccount()
+        status, http_code, message = user_account.deactivate_user(user_uuid=user_uuid)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/user/reactivate', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @admin_required
+    def reactivate_user():
+        """
+        Reactivate a user account
+        :return:
+        """
+        mandatory_keys = ['user_uuid']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        user_uuid = request.json.get('user_uuid')
+
+        user_account = UserAccount()
+        status, http_code, message = user_account.reactivate_user(user_uuid=user_uuid)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
