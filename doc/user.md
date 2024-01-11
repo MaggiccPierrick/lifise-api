@@ -76,6 +76,7 @@ RESPONSE
 ```
 {
     "account": {
+        "birthdate": "2023-12-27",
         "created_date": "2023-12-27T14:00:04.512864Z",
         "email_address": "john@doe.com",
         "firstname": "John",
@@ -176,6 +177,7 @@ RESPONSE
 ```
 {
     "account": {
+        "birthdate": "2023-12-27",
         "created_date": "2023-12-27T14:00:04.512864Z",
         "email_address": "john@doe.com",
         "firstname": "John",

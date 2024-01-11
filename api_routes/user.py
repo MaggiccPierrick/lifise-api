@@ -134,6 +134,7 @@ def add_routes(app):
                 'user_uuid': user_account.get('user_uuid'),
                 'firstname': user_account.get('firstname'),
                 'lastname': user_account.get('lastname'),
+                'birthdate': user_account.get('birthdate'),
                 'created_date': user_account.get('created_date'),
                 'updated_date': user_account.get('updated_date'),
                 'public_address': user_account.get('public_address')
@@ -236,6 +237,7 @@ def add_routes(app):
                 'user_uuid': user_account.get('user_uuid'),
                 'firstname': user_account.get('firstname'),
                 'lastname': user_account.get('lastname'),
+                'birthdate': user_account.get('birthdate'),
                 'created_date': user_account.get('created_date'),
                 'updated_date': user_account.get('updated_date'),
                 'public_address': user_account.get('public_address')
