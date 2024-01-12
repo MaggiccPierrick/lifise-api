@@ -3,6 +3,7 @@ from flask_jwt_extended import get_jwt_identity
 from functools import wraps
 
 from utils.orm.admin import AdminAccount
+from utils.orm.user import UserAccount
 
 
 def http_error_400(message="error_bad_request"):
@@ -58,6 +59,23 @@ def admin_required(func):
         if get_jwt_identity().get('is_admin') is True:
             admin = AdminAccount()
             if admin.is_admin(user_uuid=admin_uuid):
+                return func(*args, **kwargs)
+        return http_error_403()
+    return decorated_function
+
+
+def user_required(func):
+    """
+    Decorator around endpoints that require requester to be a registered user to access the resource.
+    :param func: The function wrapped by this decorator.
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        user_uuid = get_jwt_identity().get('user_uuid')
+        if user_uuid is not None:
+            user_account = UserAccount()
+            user_account.load({'user_uuid': user_uuid, 'deactivated': 0})
+            if user_account.get('user_uuid') is not None:
                 return func(*args, **kwargs)
         return http_error_403()
     return decorated_function
