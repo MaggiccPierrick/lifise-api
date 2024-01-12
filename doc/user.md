@@ -10,6 +10,9 @@
 [Logout](#logout)  
 [Update Account](#update-account)  
 [Get Account](#get-account-information)  
+[Search User](#search-user)  
+[Add A Beneficiary](#add-beneficiary)  
+[Get Beneficiaries](#get-beneficiaries)  
 
 ## Endpoints description
 ### Register
@@ -195,6 +198,115 @@ RESPONSE
         "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
     "message": "success_account",
+    "status": true
+}
+```
+
+### Search user
+_Authorized user: User_  
+Search a registered user with email address.  
+
+URI
+```
+POST /api/v1/user/search
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON
+```
+{
+    "email_address": "john@mail.com"
+}
+```
+RESPONSE
+```
+{
+    "message": "success_user_found",
+    "status": true,
+    "user": {
+        "email_address": "john@mail.com",
+        "firstname": null,
+        "lastname": null,
+        "public_address": "0x8d...",
+        "selfie": null,
+        "selfie_ext": null,
+        "user_uuid": "19034c2c-d9ef-41e7-8f87-5fa7aa7ff836"
+    }
+}
+```
+
+### Add beneficiary
+_Authorized user: User_  
+Add a beneficiary with a public address and email (optional), or his user uuid.  
+
+URI
+```
+POST /api/v1/user/beneficiary
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON  
+Add with a public address (Polygon address):  
+```
+{
+    "public_address": "0x1234567",
+    "email_address": "address@mail.com"             # optional
+}
+```
+Add a registered user, with his uuid:  
+```
+{
+    "user_uuid": "19034c2c-d9ef-41e7-8f87-5fa7aa7ff836"
+}
+```
+RESPONSE
+```
+{
+    "message": "success_beneficiary_added",
+    "status": true
+}
+```
+
+### Get beneficiaries
+_Authorized user: User_  
+Get the beneficiaries of the user.  
+
+URI
+```
+GET /api/v1/user/beneficiary
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "beneficiaries": [
+        {
+            "created_date": "2024-01-12T17:29:38.318665Z",
+            "email": null,
+            "public_address": "0x1234567890",
+            "user_uuid": null
+        },
+        {
+            "created_date": "2024-01-12T17:30:16.821174Z",
+            "email": "toto@codinsight.com",
+            "public_address": "0x1234567890",
+            "user_uuid": null
+        },
+        {
+            "created_date": "2024-01-12T17:31:02.797821Z",
+            "email": null,
+            "public_address": null,
+            "user_uuid": "19034c2c-d9ef-41e7-8f87-5fa7aa7ff836"
+        }
+    ],
+    "message": "success_beneficiary_retrieved",
     "status": true
 }
 ```

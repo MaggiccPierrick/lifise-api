@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `admin` (
     PRIMARY KEY(`admin_uuid`)
 );
 
-CREATE TABLE IF NOT EXISTS `user` (
+CREATE TABLE IF NOT EXISTS `user_account` (
     `user_uuid` CHAR(36) UNIQUE NOT NULL,
     `firstname` TEXT DEFAULT NULL,
     `lastname` TEXT DEFAULT NULL,
@@ -44,4 +44,17 @@ CREATE TABLE IF NOT EXISTS `user` (
     `deactivated` INTEGER NOT NULL,
     `deactivated_date` CHAR(30) DEFAULT NULL,
     PRIMARY KEY(`user_uuid`)
+);
+
+CREATE TABLE IF NOT EXISTS `beneficiary` (
+    `beneficiary_id` INTEGER NOT NULL AUTO_INCREMENT,
+    `user_uuid` CHAR(36) NOT NULL,
+    `beneficiary_uuid` CHAR(36) DEFAULT NULL,
+    `public_address` TEXT DEFAULT NULL,
+    `email` TEXT DEFAULT NULL,
+    `created_date` CHAR(30) NOT NULL,
+    `deactivated` INTEGER NOT NULL,
+    `deactivated_date` CHAR(30) DEFAULT NULL,
+    PRIMARY KEY(`beneficiary_id`),
+    FOREIGN KEY(`user_uuid`) REFERENCES user_account(`user_uuid`)
 );
