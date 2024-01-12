@@ -30,7 +30,7 @@ class UserAccount(Abstract):
     """
     def __init__(self, data=None, adapter=None):
         Abstract.__init__(self, data, adapter)
-        self._table = 'user'
+        self._table = 'user_account'
         self._columns = ['user_uuid', 'firstname', 'lastname', 'birthdate', 'email', 'email_hash', 'email_validated',
                          'selfie', 'otp_token', 'otp_expiration', 'public_address', 'magiclink_issuer', 'last_login',
                          'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
@@ -256,3 +256,88 @@ class UserAccount(Abstract):
         if selfie is not False:
             return selfie, file_extension
         return None, None
+
+    def search_user(self, email_address=None, public_address=None):
+        """
+        Search a user by email or public address
+        :param email_address:
+        :param public_address:
+        :return:
+        """
+        if email_address is not None:
+            if check_email_format(email_address) is False:
+                return False, 400, "error_email"
+            email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
+            self.load({'email_hash': email_address_hash, 'deactivated': 0})
+        elif public_address is not None:
+            self.load({'public_address': public_address, 'deactivated': 0})
+        else:
+            return False, 400, "error_bad_request"
+
+        if self.get('user_uuid') is None:
+            return False, 200, "success_no_user"
+
+        return True, 200, "success_user_found"
+
+
+class Beneficiary(Abstract):
+    """
+    Beneficiary class extends the base class <abstract> and provides object-like access to the beneficiary DB table.
+    """
+    def __init__(self, data=None, adapter=None):
+        Abstract.__init__(self, data, adapter)
+        self._table = 'beneficiary'
+        self._columns = ['beneficiary_id', 'user_uuid', 'beneficiary_uuid', 'public_address', 'email',
+                         'created_date', 'deactivated', 'deactivated_date']
+        self._encrypt_fields = ['email']
+        self._primary_key = ['beneficiary_id']
+        self._defaults = {
+            'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            'deactivated': 0
+        }
+
+    def add_new(self, user_uuid, beneficiary_uuid: str = None, public_address: str = None, email: str = None):
+        """
+        Add a new beneficiary to a user
+        :param user_uuid:
+        :param beneficiary_uuid:
+        :param public_address:
+        :param email:
+        :return:
+        """
+        if beneficiary_uuid is None and public_address is None:
+            return False, 400, "error_bad_request"
+        if beneficiary_uuid is not None:
+            self.set_data({
+                'user_uuid': user_uuid,
+                'beneficiary_uuid': beneficiary_uuid
+            })
+        else:
+            self.set_data({
+                'user_uuid': user_uuid,
+                'public_address': public_address,
+                'email': email
+            })
+        self.insert()
+        return True, 200, "success_beneficiary_added"
+
+    def get_beneficiaries(self, user_uuid):
+        """
+        Return the beneficiaries of the given user
+        :param user_uuid:
+        :return:
+        """
+        filter_beneficiaries = Filter()
+        filter_beneficiaries.add('deactivated', '0')
+        filter_beneficiaries.add('user_uuid', user_uuid)
+        beneficiaries_list = self.list(fields=['beneficiary_uuid', 'public_address', 'email', 'created_date'],
+                                       filter_object=filter_beneficiaries)
+        user_beneficiaries = []
+        for beneficiary in beneficiaries_list:
+            user_beneficiaries.append({
+                'user_uuid': beneficiary.get('beneficiary_uuid'),
+                'created_date': beneficiary.get('created_date'),
+                'email': beneficiary.get('email'),
+                'public_address': beneficiary.get('public_address')
+            })
+        return True, 200, "success_beneficiary_retrieved", user_beneficiaries

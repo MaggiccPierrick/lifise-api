@@ -3,8 +3,8 @@ from flask_jwt_extended import jwt_required, create_access_token, create_refresh
 from os import environ as env
 from datetime import datetime
 
-from utils.orm.user import UserAccount
-from utils.api import http_error_400, http_error_401, json_data_required
+from utils.orm.user import UserAccount, Beneficiary
+from utils.api import http_error_400, http_error_401, json_data_required, user_required
 from utils.email import Email
 from utils.redis_db import Redis
 from utils.magic_link import MagicLink
@@ -201,6 +201,7 @@ def add_routes(app):
     @app.route('/api/v1/user/account', methods=['POST'])
     @json_data_required
     @jwt_required()
+    @user_required
     def update_user_account():
         """
         Update personal account information of the user
@@ -227,6 +228,7 @@ def add_routes(app):
 
     @app.route('/api/v1/user/account', methods=['GET'])
     @jwt_required()
+    @user_required
     def get_user_account():
         """
         Return personal account information
@@ -253,3 +255,93 @@ def add_routes(app):
             }
         }
         return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/user/search', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @user_required
+    def search_user():
+        """
+        Search a user by email or public address
+        :return:
+        """
+        mandatory_keys = ['email_address']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        email_address = request.json.get('email_address')
+
+        user_account = UserAccount()
+        status, http_code, message = user_account.search_user(email_address=email_address)
+        if status is False:
+            json_data = {
+                'status': status,
+                'message': message,
+                'user': None
+            }
+        else:
+            selfie, selfie_ext = user_account.get_selfie()
+            json_data = {
+                'status': status,
+                'message': message,
+                'user': {
+                    'user_uuid': user_account.get('user_uuid'),
+                    'email_address': user_account.get('email'),
+                    'firstname': user_account.get('firstname'),
+                    'lastname': user_account.get('lastname'),
+                    'public_address': user_account.get('public_address'),
+                    'selfie': selfie,
+                    'selfie_ext': selfie_ext
+                }
+            }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/beneficiary', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @user_required
+    def add_beneficiary():
+        """
+        Add a beneficiary to the user account
+        :return:
+        """
+        beneficiary_uuid = request.json.get('user_uuid')
+        email_address = request.json.get('email_address')
+        public_address = request.json.get('public_address')
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+
+        beneficiary = Beneficiary()
+        if beneficiary_uuid is not None:
+            user_account = UserAccount()
+            user_account.load({'user_uuid': beneficiary_uuid})
+            if user_account.get('user_uuid') is None:
+                return http_error_400()
+            status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, beneficiary_uuid=beneficiary_uuid)
+        else:
+            status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, email=email_address,
+                                                             public_address=public_address)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/beneficiary', methods=['GET'])
+    @jwt_required()
+    @user_required
+    def get_beneficiaries():
+        """
+        Get the beneficiaries of the connected user
+        :return:
+        """
+        user_uuid = get_jwt_identity().get('user_uuid')
+
+        beneficiary = Beneficiary()
+        status, http_code, message, beneficiaries = beneficiary.get_beneficiaries(user_uuid=user_uuid)
+        json_data = {
+            'status': status,
+            'message': message,
+            'beneficiaries': beneficiaries
+        }
+        return make_response(jsonify(json_data), http_code)
