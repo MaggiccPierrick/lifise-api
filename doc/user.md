@@ -96,6 +96,7 @@ RESPONSE
     "jwt_token": "eyJhbG...",
     "message": "success_login",
     "refresh_token": "eyJhbGci...",
+    "refresh_expiration": "2024-01-16T21:48:54.762722Z",
     "status": true
 }
 ```
