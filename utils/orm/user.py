@@ -287,33 +287,44 @@ class Beneficiary(Abstract):
     def __init__(self, data=None, adapter=None):
         Abstract.__init__(self, data, adapter)
         self._table = 'beneficiary'
-        self._columns = ['beneficiary_id', 'user_uuid', 'beneficiary_uuid', 'public_address', 'email',
+        self._columns = ['beneficiary_uuid', 'user_uuid', 'beneficiary_user_uuid', 'public_address', 'email',
                          'created_date', 'deactivated', 'deactivated_date']
         self._encrypt_fields = ['email']
-        self._primary_key = ['beneficiary_id']
+        self._primary_key = ['beneficiary_uuid']
         self._defaults = {
             'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             'deactivated': 0
         }
 
-    def add_new(self, user_uuid, beneficiary_uuid: str = None, public_address: str = None, email: str = None):
+    def add_new(self, user_uuid, beneficiary_user_uuid: str = None, public_address: str = None, email: str = None):
         """
         Add a new beneficiary to a user
         :param user_uuid:
-        :param beneficiary_uuid:
+        :param beneficiary_user_uuid:
         :param public_address:
         :param email:
         :return:
         """
-        if beneficiary_uuid is None and public_address is None:
+        if beneficiary_user_uuid is None and public_address is None:
             return False, 400, "error_bad_request"
-        if beneficiary_uuid is not None:
+
+        if beneficiary_user_uuid is not None:
+            self.load({'user_uuid': user_uuid, 'beneficiary_user_uuid': beneficiary_user_uuid, 'deactivated': 0})
+            if self.get('beneficiary_uuid') is not None:
+                return False, 403, "error_exist"
+
             self.set_data({
+                'beneficiary_uuid': str(uuid4()),
                 'user_uuid': user_uuid,
-                'beneficiary_uuid': beneficiary_uuid
+                'beneficiary_user_uuid': beneficiary_user_uuid
             })
         else:
+            self.load({'user_uuid': user_uuid, 'public_address': public_address, 'deactivated': 0})
+            if self.get('beneficiary_uuid') is not None:
+                return False, 403, "error_exist"
+
             self.set_data({
+                'beneficiary_uuid': str(uuid4()),
                 'user_uuid': user_uuid,
                 'public_address': public_address,
                 'email': email
@@ -330,12 +341,14 @@ class Beneficiary(Abstract):
         filter_beneficiaries = Filter()
         filter_beneficiaries.add('deactivated', '0')
         filter_beneficiaries.add('user_uuid', user_uuid)
-        beneficiaries_list = self.list(fields=['beneficiary_uuid', 'public_address', 'email', 'created_date'],
+        beneficiaries_list = self.list(fields=['beneficiary_uuid', 'beneficiary_user_uuid', 'public_address', 'email',
+                                               'created_date'],
                                        filter_object=filter_beneficiaries)
         user_beneficiaries = []
         for beneficiary in beneficiaries_list:
             user_beneficiaries.append({
-                'user_uuid': beneficiary.get('beneficiary_uuid'),
+                'beneficiary_uuid': beneficiary.get('beneficiary_uuid'),
+                'user_uuid': beneficiary.get('beneficiary_user_uuid'),
                 'created_date': beneficiary.get('created_date'),
                 'email': beneficiary.get('email'),
                 'public_address': beneficiary.get('public_address')

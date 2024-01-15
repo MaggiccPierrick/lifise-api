@@ -305,19 +305,20 @@ def add_routes(app):
         Add a beneficiary to the user account
         :return:
         """
-        beneficiary_uuid = request.json.get('user_uuid')
+        beneficiary_user_uuid = request.json.get('user_uuid')
         email_address = request.json.get('email_address')
         public_address = request.json.get('public_address')
 
         user_uuid = get_jwt_identity().get('user_uuid')
 
         beneficiary = Beneficiary()
-        if beneficiary_uuid is not None:
+        if beneficiary_user_uuid is not None:
             user_account = UserAccount()
-            user_account.load({'user_uuid': beneficiary_uuid})
+            user_account.load({'user_uuid': beneficiary_user_uuid})
             if user_account.get('user_uuid') is None:
                 return http_error_400()
-            status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, beneficiary_uuid=beneficiary_uuid)
+            status, http_code, message = beneficiary.add_new(user_uuid=user_uuid,
+                                                             beneficiary_user_uuid=beneficiary_user_uuid)
         else:
             status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, email=email_address,
                                                              public_address=public_address)

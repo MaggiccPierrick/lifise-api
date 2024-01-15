@@ -288,22 +288,18 @@ RESPONSE
 {
     "beneficiaries": [
         {
-            "created_date": "2024-01-12T17:29:38.318665Z",
-            "email": null,
-            "public_address": "0x1234567890",
-            "user_uuid": null
-        },
-        {
-            "created_date": "2024-01-12T17:30:16.821174Z",
-            "email": "toto@codinsight.com",
-            "public_address": "0x1234567890",
-            "user_uuid": null
-        },
-        {
-            "created_date": "2024-01-12T17:31:02.797821Z",
+            "beneficiary_uuid": "a703c152-aa4d-4157-867f-cc8e5db73a42",
+            "created_date": "2024-01-15T16:45:14.194744Z",
             "email": null,
             "public_address": null,
             "user_uuid": "19034c2c-d9ef-41e7-8f87-5fa7aa7ff836"
+        },
+        {
+            "beneficiary_uuid": "f7786284-4a9f-4733-af3a-d06f367d02f2",
+            "created_date": "2024-01-15T16:45:23.300970Z",
+            "email": "eve@mail.com",
+            "public_address": "0x1234567890",
+            "user_uuid": null
         }
     ],
     "message": "success_beneficiary_retrieved",
