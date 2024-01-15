@@ -1,7 +1,7 @@
 from flask import jsonify, make_response, request
 from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity, get_jwt
 from os import environ as env
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from utils.orm.user import UserAccount, Beneficiary
 from utils.api import http_error_400, http_error_401, json_data_required, user_required
@@ -121,8 +121,10 @@ def add_routes(app):
                                         magiclink_issuer=user_data.get('issuer'))
 
         selfie, selfie_ext = user_account.get_selfie()
+        current_date = datetime.utcnow()
+        refresh_expiration = current_date + timedelta(seconds=int(env['JWT_REFRESH_TOKEN_EXPIRES']))
         jwt_identity = {'user_uuid': user_account.get('user_uuid'),
-                        'created_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")}
+                        'created_at': current_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")}
         jwt_token = create_access_token(identity=jwt_identity)
         refresh_token = create_refresh_token(identity=jwt_identity)
         json_data = {
@@ -130,6 +132,7 @@ def add_routes(app):
             'message': message,
             'jwt_token': jwt_token,
             'refresh_token': refresh_token,
+            'refresh_expiration': refresh_expiration.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             'account': {
                 'email_address': user_account.get('email'),
                 'user_uuid': user_account.get('user_uuid'),
