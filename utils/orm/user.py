@@ -296,7 +296,7 @@ class Beneficiary(Abstract):
             'deactivated': 0
         }
 
-    def add_new(self, user_uuid, beneficiary_user_uuid: str = None, public_address: str = None, email: str = None):
+    def add_new(self, user_uuid: str, beneficiary_user_uuid: str = None, public_address: str = None, email: str = None):
         """
         Add a new beneficiary to a user
         :param user_uuid:
@@ -332,7 +332,7 @@ class Beneficiary(Abstract):
         self.insert()
         return True, 200, "success_beneficiary_added"
 
-    def get_beneficiaries(self, user_uuid):
+    def get_beneficiaries(self, user_uuid: str):
         """
         Return the beneficiaries of the given user
         :param user_uuid:
@@ -354,3 +354,19 @@ class Beneficiary(Abstract):
                 'public_address': beneficiary.get('public_address')
             })
         return True, 200, "success_beneficiary_retrieved", user_beneficiaries
+
+    def remove(self, user_uuid: str, beneficiary_uuid: str):
+        """
+        Remove the beneficiary from the given user (deactivate him)
+        :param user_uuid:
+        :param beneficiary_uuid:
+        :return:
+        """
+        self.load({'user_uuid': user_uuid, 'beneficiary_uuid': beneficiary_uuid, 'deactivated': 0})
+        if self.get('beneficiary_uuid') is None:
+            return False, 400, "error_not_exist"
+
+        self.set('deactivated', 1)
+        self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, "success_removed"

@@ -346,3 +346,27 @@ def add_routes(app):
             'beneficiaries': beneficiaries
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/beneficiary/remove', methods=['POST'])
+    @jwt_required()
+    @user_required
+    def remove_beneficiary():
+        """
+        Remove a beneficiary from user list
+        :return:
+        """
+        mandatory_keys = ['beneficiary_uuid']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        beneficiary_uuid = request.json.get('beneficiary_uuid')
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+
+        beneficiary = Beneficiary()
+        status, http_code, message = beneficiary.remove(user_uuid=user_uuid, beneficiary_uuid=beneficiary_uuid)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)

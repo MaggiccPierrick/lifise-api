@@ -12,6 +12,7 @@
 [Get Account](#get-account-information)  
 [Search User](#search-user)  
 [Add A Beneficiary](#add-beneficiary)  
+[Remove A Beneficiary](#remove-beneficiary)  
 [Get Beneficiaries](#get-beneficiaries)  
 
 ## Endpoints description
@@ -267,6 +268,33 @@ RESPONSE
 ```
 {
     "message": "success_beneficiary_added",
+    "status": true
+}
+```
+
+### Remove beneficiary
+_Authorized user: User_  
+Remove a beneficiary from user's list.  
+
+URI
+```
+POST /api/v1/user/beneficiary/remove
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON  
+Add with a public address (Polygon address):  
+```
+{
+    "beneficiary_uuid": "900fe01c-d5f5-40d2-8927-7675f7cf1172"
+}
+```
+RESPONSE
+```
+{
+    "message": "success_removed",
     "status": true
 }
 ```
