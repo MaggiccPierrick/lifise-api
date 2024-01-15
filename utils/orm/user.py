@@ -110,6 +110,18 @@ class UserAccount(Abstract):
         self.update()
         return True, 200, 'success_login'
 
+    def set_otp_token(self):
+        """
+
+        :return:
+        """
+        otp_token = '{:06}'.format(randrange(1, 10 ** 6))
+        self.set('otp_token', otp_token)
+        validity_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
+        self.set('otp_expiration', validity_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, "success_token_set"
+
     def check_otp_token(self, token: str):
         """
         Check the otp token for the loaded user

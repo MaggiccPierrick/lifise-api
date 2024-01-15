@@ -255,13 +255,15 @@ Add with a public address (Polygon address):
 ```
 {
     "public_address": "0x1234567",
-    "email_address": "address@mail.com"             # optional
+    "email_address": "address@mail.com",                    # optional
+    "2fa_token": ""                                         # only for the second request to validate with 2FA
 }
 ```
 Add a registered user, with his uuid:  
 ```
 {
-    "user_uuid": "19034c2c-d9ef-41e7-8f87-5fa7aa7ff836"
+    "user_uuid": "19034c2c-d9ef-41e7-8f87-5fa7aa7ff836",
+    "2fa_token": ""                                         # only for the second request to validate with 2FA
 }
 ```
 RESPONSE
