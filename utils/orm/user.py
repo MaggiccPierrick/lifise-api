@@ -110,6 +110,18 @@ class UserAccount(Abstract):
         self.update()
         return True, 200, 'success_login'
 
+    def set_otp_token(self):
+        """
+
+        :return:
+        """
+        otp_token = '{:06}'.format(randrange(1, 10 ** 6))
+        self.set('otp_token', otp_token)
+        validity_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
+        self.set('otp_expiration', validity_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, "success_token_set"
+
     def check_otp_token(self, token: str):
         """
         Check the otp token for the loaded user
@@ -287,33 +299,44 @@ class Beneficiary(Abstract):
     def __init__(self, data=None, adapter=None):
         Abstract.__init__(self, data, adapter)
         self._table = 'beneficiary'
-        self._columns = ['beneficiary_id', 'user_uuid', 'beneficiary_uuid', 'public_address', 'email',
+        self._columns = ['beneficiary_uuid', 'user_uuid', 'beneficiary_user_uuid', 'public_address', 'email',
                          'created_date', 'deactivated', 'deactivated_date']
         self._encrypt_fields = ['email']
-        self._primary_key = ['beneficiary_id']
+        self._primary_key = ['beneficiary_uuid']
         self._defaults = {
             'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             'deactivated': 0
         }
 
-    def add_new(self, user_uuid, beneficiary_uuid: str = None, public_address: str = None, email: str = None):
+    def add_new(self, user_uuid: str, beneficiary_user_uuid: str = None, public_address: str = None, email: str = None):
         """
         Add a new beneficiary to a user
         :param user_uuid:
-        :param beneficiary_uuid:
+        :param beneficiary_user_uuid:
         :param public_address:
         :param email:
         :return:
         """
-        if beneficiary_uuid is None and public_address is None:
+        if beneficiary_user_uuid is None and public_address is None:
             return False, 400, "error_bad_request"
-        if beneficiary_uuid is not None:
+
+        if beneficiary_user_uuid is not None:
+            self.load({'user_uuid': user_uuid, 'beneficiary_user_uuid': beneficiary_user_uuid, 'deactivated': 0})
+            if self.get('beneficiary_uuid') is not None:
+                return False, 403, "error_exist"
+
             self.set_data({
+                'beneficiary_uuid': str(uuid4()),
                 'user_uuid': user_uuid,
-                'beneficiary_uuid': beneficiary_uuid
+                'beneficiary_user_uuid': beneficiary_user_uuid
             })
         else:
+            self.load({'user_uuid': user_uuid, 'public_address': public_address, 'deactivated': 0})
+            if self.get('beneficiary_uuid') is not None:
+                return False, 403, "error_exist"
+
             self.set_data({
+                'beneficiary_uuid': str(uuid4()),
                 'user_uuid': user_uuid,
                 'public_address': public_address,
                 'email': email
@@ -321,7 +344,7 @@ class Beneficiary(Abstract):
         self.insert()
         return True, 200, "success_beneficiary_added"
 
-    def get_beneficiaries(self, user_uuid):
+    def get_beneficiaries(self, user_uuid: str):
         """
         Return the beneficiaries of the given user
         :param user_uuid:
@@ -330,14 +353,32 @@ class Beneficiary(Abstract):
         filter_beneficiaries = Filter()
         filter_beneficiaries.add('deactivated', '0')
         filter_beneficiaries.add('user_uuid', user_uuid)
-        beneficiaries_list = self.list(fields=['beneficiary_uuid', 'public_address', 'email', 'created_date'],
+        beneficiaries_list = self.list(fields=['beneficiary_uuid', 'beneficiary_user_uuid', 'public_address', 'email',
+                                               'created_date'],
                                        filter_object=filter_beneficiaries)
         user_beneficiaries = []
         for beneficiary in beneficiaries_list:
             user_beneficiaries.append({
-                'user_uuid': beneficiary.get('beneficiary_uuid'),
+                'beneficiary_uuid': beneficiary.get('beneficiary_uuid'),
+                'user_uuid': beneficiary.get('beneficiary_user_uuid'),
                 'created_date': beneficiary.get('created_date'),
                 'email': beneficiary.get('email'),
                 'public_address': beneficiary.get('public_address')
             })
         return True, 200, "success_beneficiary_retrieved", user_beneficiaries
+
+    def remove(self, user_uuid: str, beneficiary_uuid: str):
+        """
+        Remove the beneficiary from the given user (deactivate him)
+        :param user_uuid:
+        :param beneficiary_uuid:
+        :return:
+        """
+        self.load({'user_uuid': user_uuid, 'beneficiary_uuid': beneficiary_uuid, 'deactivated': 0})
+        if self.get('beneficiary_uuid') is None:
+            return False, 400, "error_not_exist"
+
+        self.set('deactivated', 1)
+        self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, "success_removed"
