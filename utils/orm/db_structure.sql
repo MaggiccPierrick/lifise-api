@@ -47,14 +47,15 @@ CREATE TABLE IF NOT EXISTS `user_account` (
 );
 
 CREATE TABLE IF NOT EXISTS `beneficiary` (
-    `beneficiary_id` INTEGER NOT NULL AUTO_INCREMENT,
+    `beneficiary_uuid` CHAR(36) UNIQUE NOT NULL,
     `user_uuid` CHAR(36) NOT NULL,
-    `beneficiary_uuid` CHAR(36) DEFAULT NULL,
+    `beneficiary_user_uuid` CHAR(36) DEFAULT NULL,
     `public_address` TEXT DEFAULT NULL,
     `email` TEXT DEFAULT NULL,
     `created_date` CHAR(30) NOT NULL,
     `deactivated` INTEGER NOT NULL,
     `deactivated_date` CHAR(30) DEFAULT NULL,
-    PRIMARY KEY(`beneficiary_id`),
-    FOREIGN KEY(`user_uuid`) REFERENCES user_account(`user_uuid`)
+    PRIMARY KEY(`beneficiary_uuid`),
+    FOREIGN KEY(`user_uuid`) REFERENCES user_account(`user_uuid`),
+    FOREIGN KEY(`beneficiary_user_uuid`) REFERENCES user_account(`user_uuid`)
 );

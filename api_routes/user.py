@@ -305,22 +305,43 @@ def add_routes(app):
         Add a beneficiary to the user account
         :return:
         """
-        beneficiary_uuid = request.json.get('user_uuid')
+        beneficiary_user_uuid = request.json.get('user_uuid')
         email_address = request.json.get('email_address')
         public_address = request.json.get('public_address')
+        token = request.json.get('2fa_token')
 
         user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
 
-        beneficiary = Beneficiary()
-        if beneficiary_uuid is not None:
-            user_account = UserAccount()
-            user_account.load({'user_uuid': beneficiary_uuid})
-            if user_account.get('user_uuid') is None:
-                return http_error_400()
-            status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, beneficiary_uuid=beneficiary_uuid)
+        if token is None:
+            status, http_code, message = user_account.set_otp_token()
+            if status is True:
+                delay = int(env['APP_TOKEN_DELAY']) // 60
+                subject = "MetaBank - Ajout d'un bénéficiaire"
+                content = "Renseigner le code suivant pour valider l'ajout du bénéficiaire (valide {0} minutes) :\n" \
+                          "{1}".format(delay, user_account.get('otp_token'))
+                email = Email(app)
+                email.send_async(subject=subject, body=content, recipients=[user_account.get('email')])
         else:
-            status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, email=email_address,
-                                                             public_address=public_address)
+            status, http_code, message = user_account.check_otp_token(token=token)
+            if status is False:
+                json_data = {
+                    'status': status,
+                    'message': message
+                }
+                return make_response(jsonify(json_data), http_code)
+            beneficiary = Beneficiary()
+            if beneficiary_user_uuid is not None:
+                user_account = UserAccount()
+                user_account.load({'user_uuid': beneficiary_user_uuid})
+                if user_account.get('user_uuid') is None:
+                    return http_error_400()
+                status, http_code, message = beneficiary.add_new(user_uuid=user_uuid,
+                                                                 beneficiary_user_uuid=beneficiary_user_uuid)
+            else:
+                status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, email=email_address,
+                                                                 public_address=public_address)
         json_data = {
             'status': status,
             'message': message
@@ -343,5 +364,29 @@ def add_routes(app):
             'status': status,
             'message': message,
             'beneficiaries': beneficiaries
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/beneficiary/remove', methods=['POST'])
+    @jwt_required()
+    @user_required
+    def remove_beneficiary():
+        """
+        Remove a beneficiary from user list
+        :return:
+        """
+        mandatory_keys = ['beneficiary_uuid']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        beneficiary_uuid = request.json.get('beneficiary_uuid')
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+
+        beneficiary = Beneficiary()
+        status, http_code, message = beneficiary.remove(user_uuid=user_uuid, beneficiary_uuid=beneficiary_uuid)
+        json_data = {
+            'status': status,
+            'message': message
         }
         return make_response(jsonify(json_data), http_code)
