@@ -4,6 +4,7 @@
 
 ## Table of contents
 [Register User](#register)  
+[Verify If Email Exists](#verify-if-an-email-already-exists)  
 [Validate Account](#validate-account)  
 [Login](#login)  
 [Refresh Login](#login-refresh)  
@@ -29,7 +30,8 @@ JSON
 {
     "firstname": "John",
     "lastname": "Doe",
-    "email_address": "john@doe.com"
+    "email_address": "john@doe.com",
+    "did_token": "xxx"
 }
 ```
 RESPONSE
@@ -37,6 +39,28 @@ RESPONSE
 {
     "message": "success_user_register",
     "status": true
+}
+```
+
+### Verify if an email already exists
+_Authorized user: User_  
+Verify if the given email address is already registered on the platform.  
+
+URI
+```
+POST /api/v1/user/register
+```
+JSON
+```
+{
+    "email_address": "john@doe.com"
+}
+```
+RESPONSE
+```
+{
+    "message": "success_already_exixts",
+    "status": true                          # false if the email does not exist
 }
 ```
 
