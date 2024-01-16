@@ -175,16 +175,19 @@ RESPONSE
 
 ### Get account information
 _Authorized user: User_  
+Return the personal information of the connected user or public profile of the requested user.  
 
 URI
 ```
-GET /api/v1/user/account
+GET /api/v1/user/account                # get full profile of the user
+GET /api/v1/user/account/<user_uuid>    # get public profile of the other user
 ```
 HEADER
 ```
 X-AUTH-USER: "JWT_token"
 ```
-RESPONSE
+RESPONSE  
+Full personal profile
 ```
 {
     "account": {
@@ -197,6 +200,22 @@ RESPONSE
         "selfie": "IMG_DATA",
         "selfie_ext": "png",
         "updated_date": "2023-12-27T18:00:40.916883Z",
+        "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
+    },
+    "message": "success_account",
+    "status": true
+}
+```
+Public profile
+```
+{
+    "account": {
+        "email_address": "john@doe.com",
+        "firstname": "John",
+        "lastname": "D.",
+        "public_address": "0x...",
+        "selfie": "IMG_DATA",
+        "selfie_ext": "png",
         "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
     "message": "success_account",
