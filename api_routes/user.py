@@ -230,33 +230,51 @@ def add_routes(app):
         return make_response(jsonify(json_data), http_code)
 
     @app.route('/api/v1/user/account', methods=['GET'])
+    @app.route('/api/v1/user/account/<user_uuid>', methods=['GET'])
     @jwt_required()
     @user_required
-    def get_user_account():
+    def get_user_account(user_uuid=None):
         """
-        Return personal account information
+        Return personal account information or public profile of the given user uuid
         :return:
         """
-        user_uuid = get_jwt_identity().get('user_uuid')
         user_account = UserAccount()
-        user_account.load({'user_uuid': user_uuid})
-        selfie, selfie_ext = user_account.get_selfie()
-        json_data = {
-            'status': True,
-            'message': 'success_account',
-            'account': {
-                'email_address': user_account.get('email'),
-                'user_uuid': user_account.get('user_uuid'),
-                'firstname': user_account.get('firstname'),
-                'lastname': user_account.get('lastname'),
-                'birthdate': user_account.get('birthdate'),
-                'created_date': user_account.get('created_date'),
-                'updated_date': user_account.get('updated_date'),
-                'public_address': user_account.get('public_address'),
-                'selfie': selfie,
-                'selfie_ext': selfie_ext
+        if user_uuid is None:
+            user_uuid = get_jwt_identity().get('user_uuid')
+            user_account.load({'user_uuid': user_uuid})
+            selfie, selfie_ext = user_account.get_selfie()
+            json_data = {
+                'status': True,
+                'message': 'success_account',
+                'account': {
+                    'email_address': user_account.get('email'),
+                    'user_uuid': user_account.get('user_uuid'),
+                    'firstname': user_account.get('firstname'),
+                    'lastname': user_account.get('lastname'),
+                    'birthdate': user_account.get('birthdate'),
+                    'created_date': user_account.get('created_date'),
+                    'updated_date': user_account.get('updated_date'),
+                    'public_address': user_account.get('public_address'),
+                    'selfie': selfie,
+                    'selfie_ext': selfie_ext
+                }
             }
-        }
+        else:
+            user_account.load({'user_uuid': user_uuid})
+            selfie, selfie_ext = user_account.get_selfie()
+            json_data = {
+                'status': True,
+                'message': 'success_account',
+                'account': {
+                    'user_uuid': user_account.get('user_uuid'),
+                    'firstname': user_account.get('firstname'),
+                    'lastname': user_account.get('lastname'),
+                    'email_address': user_account.get('email'),
+                    'public_address': user_account.get('public_address'),
+                    'selfie': selfie,
+                    'selfie_ext': selfie_ext
+                }
+            }
         return make_response(jsonify(json_data), 200)
 
     @app.route('/api/v1/user/search', methods=['POST'])
