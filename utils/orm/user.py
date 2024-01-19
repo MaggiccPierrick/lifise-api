@@ -89,19 +89,13 @@ class UserAccount(Abstract):
 
         return True, 200, "success_user_register", False
 
-    def login(self, user_uuid: str = None, magiclink_issuer: str = None):
+    def login(self, magiclink_issuer: str):
         """
-        Login the user
-        :param user_uuid:
+        Login the user with MagicLink issuer
         :param magiclink_issuer:
         :return:
         """
-        if user_uuid is None and magiclink_issuer is None:
-            return False, 400, "error_bad_request"
-        if user_uuid is not None:
-            self.load({'user_uuid': user_uuid})
-        else:
-            self.load({'magiclink_issuer': magiclink_issuer})
+        self.load({'magiclink_issuer': magiclink_issuer})
         if self.get('user_uuid') is None:
             return False, 401, 'error_not_exist'
         if self.get('deactivated') == 1:
