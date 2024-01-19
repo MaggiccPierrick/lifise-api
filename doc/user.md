@@ -23,7 +23,7 @@ Create user account on the platform.
 
 URI
 ```
-POST /api/v1/user/register
+POST /api/v1/user/is_registered
 ```
 JSON
 ```
