@@ -8,6 +8,7 @@ from utils.api import http_error_400, http_error_401, json_data_required, user_r
 from utils.email import Email
 from utils.redis_db import Redis
 from utils.magic_link import MagicLink
+from utils.security import generate_hash
 
 
 def add_routes(app):
@@ -51,6 +52,7 @@ def add_routes(app):
         lastname = request.json.get('lastname')
         email_address = request.json.get('email_address').lower()
         did_token = request.json.get('did_token')
+        user_uuid = request.json.get('user_uuid')
 
         magic_link = MagicLink()
         status, http_code, message, user_data = magic_link.get_user_info(did_token=did_token)
@@ -62,32 +64,18 @@ def add_routes(app):
             return make_response(jsonify(json_data), http_code)
 
         user_account = UserAccount()
-        status, http_code, message, already_exist = user_account.register(
-            email_address=email_address, magiclink_issuer=user_data.get('issuer'),
-            public_address=user_data.get('public_address'), firstname=firstname, lastname=lastname)
-        json_data = {
-            'status': status,
-            'message': message
-        }
-        return make_response(jsonify(json_data), http_code)
-
-    @app.route('/api/v1/user/validate', methods=['POST'])
-    @json_data_required
-    def validate_user():
-        """
-        Activate user account
-        :return:
-        """
-        mandatory_keys = ['user_uuid', 'token']
-        for mandatory_key in mandatory_keys:
-            if mandatory_key not in request.json:
-                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
-        user_uuid = request.json.get('user_uuid')
-        token = request.json.get('token')
-
-        user_account = UserAccount()
-        user_account.load({'user_uuid': user_uuid})
-        status, http_code, message = user_account.check_otp_token(token=token)
+        if user_uuid is None:
+            status, http_code, message, already_exist = user_account.register(
+                email_address=email_address, magiclink_issuer=user_data.get('issuer'),
+                public_address=user_data.get('public_address'), firstname=firstname, lastname=lastname)
+        else:
+            email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
+            user_account.load({'user_uuid': user_uuid, 'email_hash': email_address_hash, 'deactivated': 0})
+            if user_account.get('user_uuid') is None:
+                return http_error_401()
+            status, http_code, message = user_account.update_account(public_address=user_data.get('public_address'),
+                                                                     magiclink_issuer=user_data.get('issuer'),
+                                                                     firstname=firstname, lastname=lastname)
         json_data = {
             'status': status,
             'message': message
@@ -106,7 +94,6 @@ def add_routes(app):
             if mandatory_key not in request.json:
                 return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
         did_token = request.json.get('did_token')
-        user_uuid = request.json.get('user_uuid')
 
         magic_link = MagicLink()
         status, http_code, message, user_data = magic_link.get_user_info(did_token=did_token)
@@ -118,31 +105,17 @@ def add_routes(app):
             return make_response(jsonify(json_data), http_code)
 
         user_account = UserAccount()
-        if user_uuid is None:
-            status, http_code, message = user_account.login(magiclink_issuer=user_data.get('issuer'))
-            if status is False and user_account.get('user_uuid') is None:
-                status, http_code, message, already_exist = user_account.register(
-                    email_address=user_data.get('email'), magiclink_issuer=user_data.get('issuer'),
-                    public_address=user_data.get('public_address'))
-                if status is False:
-                    json_data = {
-                        'status': status,
-                        'message': message
-                    }
-                    return make_response(jsonify(json_data), http_code)
-        else:
-            status, http_code, message = user_account.login(user_uuid=user_uuid)
+        status, http_code, message = user_account.login(magiclink_issuer=user_data.get('issuer'))
+        if status is False and user_account.get('user_uuid') is None:
+            status, http_code, message, already_exist = user_account.register(
+                email_address=user_data.get('email'), magiclink_issuer=user_data.get('issuer'),
+                public_address=user_data.get('public_address'))
             if status is False:
                 json_data = {
                     'status': status,
                     'message': message
                 }
                 return make_response(jsonify(json_data), http_code)
-            if user_account.get('issuer') is not None and user_account.get('issuer') != user_data.get('issuer'):
-                return http_error_401()
-
-            user_account.update_account(public_address=user_data.get('public_address'),
-                                        magiclink_issuer=user_data.get('issuer'))
 
         selfie, selfie_ext = user_account.get_selfie()
         current_date = datetime.utcnow()

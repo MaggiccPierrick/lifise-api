@@ -5,7 +5,6 @@
 ## Table of contents
 [Register User](#register)  
 [Verify If Email Exists](#verify-if-an-email-already-exists)  
-[Validate Account](#validate-account)  
 [Login](#login)  
 [Refresh Login](#login-refresh)  
 [Logout](#logout)  
@@ -23,7 +22,7 @@ Create user account on the platform.
 
 URI
 ```
-POST /api/v1/user/is_registered
+POST /api/v1/user/register
 ```
 JSON
 ```
@@ -31,7 +30,8 @@ JSON
     "firstname": "John",
     "lastname": "Doe",
     "email_address": "john@doe.com",
-    "did_token": "xxx"
+    "did_token": "xxx",
+    "user_uuid": ""                     # optional, only used if the user has been invited and pre-registered by MetaBank
 }
 ```
 RESPONSE
@@ -48,7 +48,7 @@ Verify if the given email address is already registered on the platform.
 
 URI
 ```
-POST /api/v1/user/register
+POST /api/v1/user/is_registered
 ```
 JSON
 ```
@@ -64,28 +64,6 @@ RESPONSE
 }
 ```
 
-### Validate account
-_Authorized user: User_  
-Validate the user account.  
-
-URI
-```
-POST /api/v1/user/validate
-```
-JSON
-```
-{
-    "user_uuid": "f601edad-0c82-4e6c-8775-659c07fc9c2e",
-    "token": "180745"
-}
-```
-RESPONSE
-```
-{
-    "message": "success_validated",
-    "status": true
-}
-```
 
 ### Login
 _Authorized user: User_  
@@ -98,8 +76,7 @@ POST /api/v1/user/login
 JSON
 ```
 {
-    "did_token": "xxx",
-    "user_uuid"             # optional, used for pre-registered users
+    "did_token": "xxx"
 }
 ```
 RESPONSE
