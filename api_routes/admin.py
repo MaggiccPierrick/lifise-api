@@ -4,10 +4,11 @@ from os import environ as env
 from datetime import datetime
 
 from utils.orm.admin import AdminAccount
-from utils.orm.user import UserAccount
-from utils.orm.filter import Filter
+from utils.orm.user import UserAccount, TokenClaim
+from utils.orm.filter import Filter, OperatorType
 from utils.api import http_error_400, http_error_401, json_data_required, admin_required
 from utils.email import Email
+from utils.security import generate_hash
 
 
 def add_routes(app):
@@ -316,6 +317,72 @@ def add_routes(app):
         }
         return make_response(jsonify(json_data), http_code)
 
+    @app.route('/api/v1/admin/user/invite', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @admin_required
+    def invite_users():
+        """
+        Invite a list of users by email
+        :return:
+        """
+        mandatory_keys = ['emails_list', 'claimable_tokens']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        emails_list = request.json.get('emails_list')
+        claimable_tokens = float(request.json.get('claimable_tokens'))
+
+        if not isinstance(emails_list, list) or len(emails_list) == 0:
+            return http_error_400()
+
+        admin_uuid = get_jwt_identity().get('admin_uuid')
+        unique_emails = list(set(emails_list))
+
+        not_created = []
+        created = []
+        existed = []
+        user_account = UserAccount()
+        for email_address in unique_emails:
+            status, http_code, message, already_exist = user_account.register(email_address=email_address)
+            if status is False and already_exist is False:
+                not_created.append(email_address)
+            else:
+                if already_exist is True:
+                    existed.append(email_address)
+                    email_address_hash, email_salt = generate_hash(data_to_hash=email_address,
+                                                                   salt=env['APP_DB_HASH_SALT'])
+                    user_account.load({'email_hash': email_address_hash})
+                else:
+                    created.append(email_address)
+                if claimable_tokens > 0:
+                    token_claim = TokenClaim()
+                    token_claim.create(creator_uuid=admin_uuid, user_uuid=user_account.get('user_uuid'),
+                                       nb_token=claimable_tokens)
+
+        email = Email(app)
+        if len(existed) > 0 and claimable_tokens > 0:
+            subject = "MetaBank vous offre des euros"
+            content = "MetaBank vous offre {0} CAA euros.\n" \
+                      "Connectez-vous à votre compte pour les percevoir.".format(claimable_tokens)
+            email.send_async(subject=subject, body=content, recipients=[env['EMAIL_ADDRESS']], bcc=existed)
+
+        if len(created) > 0:
+            subject = "Créez votre compte MetaBank"
+            if claimable_tokens > 0:
+                content = "MetaBank vous invite à créer votre compte dès maintenant " \
+                          "et vous offre {0} CAA euros.\n".format(claimable_tokens)
+            else:
+                content = "MetaBank vous invite à créer votre compte dès maintenant."
+            email.send_async(subject=subject, body=content, recipients=[env['EMAIL_ADDRESS']], bcc=created)
+
+        json_data = {
+            'status': True,
+            'message': 'successful_user_accounts',
+            'accounts_not_created': not_created
+        }
+        return make_response(jsonify(json_data), 200)
+
     @app.route('/api/v1/admin/users', methods=['GET'])
     @jwt_required()
     @admin_required
@@ -328,10 +395,18 @@ def add_routes(app):
         if request.args.get('deactivated') == 'true':
             deactivated = 1
 
+        pending = False
+        if request.args.get('pending') == 'true':
+            pending = True
+
         user_account = UserAccount()
-        filter_obj = Filter()
-        filter_obj.add('deactivated', str(deactivated))
-        user_accounts = user_account.list(filter_object=filter_obj, order='lastname', asc='ASC')
+        filter_user = Filter()
+        filter_user.add('deactivated', str(deactivated))
+        if pending is True:
+            filter_user.add('public_address', operator=OperatorType.IN)
+        else:
+            filter_user.add('public_address', operator=OperatorType.INN)
+        user_accounts = user_account.list(filter_object=filter_user, order='lastname', asc='ASC')
         users_list = []
         for current_user in user_accounts:
             email_validated = False

@@ -299,13 +299,43 @@ RESPONSE
 }
 ```
 
+### Invite users to register
+_Authorized user: Admin_  
+Send an invitation email, with optionally a number of tokens to claim.  
+
+URI
+```
+POST /api/v1/admin/user/invite
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON
+```
+{
+    "emails_list": ["john@codinsight.com"],
+    "claimable_tokens": 23.45
+}
+```
+RESPONSE
+```
+{
+    "accounts_not_created": [],                 # returns not created email addresses accounts
+    "message": "successful_user_accounts",
+    "status": true
+}
+```
+
 ### Get user accounts
 _Authorized user: Admin_  
 Get all user accounts.  
 
-URI
+URI  
+_deactivated_ arg is optional. By default, the endpoint returns active accounts. Set 'deactivated=true' to get deactivated accounts.  
+_pending_ arg is optional. By default, the endpoint returns completed accounts. Set 'pending=true' to get unconfirmed accounts.  
 ```
-GET /api/v1/admin/users
+GET /api/v1/admin/users?deactivated=false&pending=false
 ```
 HEADER
 ```

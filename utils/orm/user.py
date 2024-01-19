@@ -55,15 +55,15 @@ class UserAccount(Abstract):
         :return:
         """
         if firstname is not None and (len(firstname) < 2 or len(firstname) > 30):
-            return False, 400, "error_firstname"
+            return False, 400, "error_firstname", False
         if lastname is not None and (len(lastname) < 2 or len(lastname) > 30):
-            return False, 400, "error_lastname"
+            return False, 400, "error_lastname", False
 
         if check_email_format(email_address) is False:
-            return False, 400, "error_email"
+            return False, 400, "error_email", False
 
         if self.is_existing(email_address=email_address) is True:
-            return False, 400, "error_exist"
+            return False, 400, "error_exist", True
 
         user_uuid = str(uuid4())
         email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
@@ -85,9 +85,9 @@ class UserAccount(Abstract):
             self.insert()
         except Exception as e:
             self.log.error("User registration db error = {0}".format(e))
-            return False, 500, "error_user_register"
+            return False, 500, "error_user_register", False
 
-        return True, 200, "success_user_register"
+        return True, 200, "success_user_register", False
 
     def login(self, user_uuid: str = None, magiclink_issuer: str = None):
         """
@@ -382,3 +382,37 @@ class Beneficiary(Abstract):
         self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         self.update()
         return True, 200, "success_removed"
+
+
+class TokenClaim(Abstract):
+    """
+    Beneficiary class extends the base class <abstract> and provides object-like access to the beneficiary DB table.
+    """
+    def __init__(self, data=None, adapter=None):
+        Abstract.__init__(self, data, adapter)
+        self._table = 'token_claim'
+        self._columns = ['token_claim_uuid', 'user_uuid', 'nb_token', 'tx_hash',
+                         'creator_id', 'created_date', 'claimed', 'claimed_date', 'deactivated', 'deactivated_date']
+        self._primary_key = ['token_claim_uuid']
+        self._defaults = {
+            'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            'deactivated': 0,
+            'claimed': 0
+        }
+
+    def create(self, creator_uuid: str, user_uuid: str, nb_token: float):
+        """
+        Create a new token claim entry for the given user
+        :param creator_uuid:
+        :param user_uuid:
+        :param nb_token:
+        :return:
+        """
+        self.set_data({
+            'token_claim_uuid': str(uuid4()),
+            'creator_id': creator_uuid,
+            'user_uuid': user_uuid,
+            'nb_token': nb_token
+        })
+        self.insert()
+        return True
