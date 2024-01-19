@@ -340,41 +340,42 @@ def add_routes(app):
         unique_emails = list(set(emails_list))
 
         not_created = []
-        created = []
         existed = []
         user_account = UserAccount()
+        email = Email(app)
+        email_subject = "Créez votre compte MetaBank"
+        invitation_link = "{0}/signup?user_uuid=".format(env['APP_FRONT_URL'])
+
         for email_address in unique_emails:
             status, http_code, message, already_exist = user_account.register(email_address=email_address)
             if status is False and already_exist is False:
                 not_created.append(email_address)
+                continue
+            if status is False and already_exist is True:
+                existed.append(email_address)
+                email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
+                user_account.load({'email_hash': email_address_hash})
             else:
-                if already_exist is True:
-                    existed.append(email_address)
-                    email_address_hash, email_salt = generate_hash(data_to_hash=email_address,
-                                                                   salt=env['APP_DB_HASH_SALT'])
-                    user_account.load({'email_hash': email_address_hash})
-                else:
-                    created.append(email_address)
                 if claimable_tokens > 0:
-                    token_claim = TokenClaim()
-                    token_claim.create(creator_uuid=admin_uuid, user_uuid=user_account.get('user_uuid'),
-                                       nb_token=claimable_tokens)
+                    content = "MetaBank vous invite à créer votre compte dès maintenant " \
+                              "et vous offre {0} CAA euros.\n" \
+                              "Cliquez sur le lien suivant pour créer votre compte et obtenir vos CAA :\n" \
+                              "{1}{2}".format(claimable_tokens, invitation_link, user_account.get('user_uuid'))
+                else:
+                    content = "MetaBank vous invite à créer votre compte dès maintenant.\n" \
+                              "Cliquez sur le lien suivant pour créer votre compte :\n" \
+                              "{0}{1}".format(invitation_link, user_account.get('user_uuid'))
+                email.send_async(subject=email_subject, body=content, recipients=[user_account.get('email')])
+            if claimable_tokens > 0:
+                token_claim = TokenClaim()
+                token_claim.create(creator_uuid=admin_uuid, user_uuid=user_account.get('user_uuid'),
+                                   nb_token=claimable_tokens)
 
-        email = Email(app)
         if len(existed) > 0 and claimable_tokens > 0:
             subject = "MetaBank vous offre des euros"
             content = "MetaBank vous offre {0} CAA euros.\n" \
                       "Connectez-vous à votre compte pour les percevoir.".format(claimable_tokens)
             email.send_async(subject=subject, body=content, recipients=[env['EMAIL_ADDRESS']], bcc=existed)
-
-        if len(created) > 0:
-            subject = "Créez votre compte MetaBank"
-            if claimable_tokens > 0:
-                content = "MetaBank vous invite à créer votre compte dès maintenant " \
-                          "et vous offre {0} CAA euros.\n".format(claimable_tokens)
-            else:
-                content = "MetaBank vous invite à créer votre compte dès maintenant."
-            email.send_async(subject=subject, body=content, recipients=[env['EMAIL_ADDRESS']], bcc=created)
 
         json_data = {
             'status': True,
