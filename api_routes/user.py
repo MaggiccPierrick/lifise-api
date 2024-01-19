@@ -62,10 +62,9 @@ def add_routes(app):
             return make_response(jsonify(json_data), http_code)
 
         user_account = UserAccount()
-        status, http_code, message = user_account.register(email_address=email_address,
-                                                           magiclink_issuer=user_data.get('issuer'),
-                                                           public_address=user_data.get('public_address'),
-                                                           firstname=firstname, lastname=lastname)
+        status, http_code, message, already_exist = user_account.register(
+            email_address=email_address, magiclink_issuer=user_data.get('issuer'),
+            public_address=user_data.get('public_address'), firstname=firstname, lastname=lastname)
         json_data = {
             'status': status,
             'message': message
@@ -122,9 +121,9 @@ def add_routes(app):
         if user_uuid is None:
             status, http_code, message = user_account.login(magiclink_issuer=user_data.get('issuer'))
             if status is False and user_account.get('user_uuid') is None:
-                status, http_code, message = user_account.register(email_address=user_data.get('email'),
-                                                                   magiclink_issuer=user_data.get('issuer'),
-                                                                   public_address=user_data.get('public_address'))
+                status, http_code, message, already_exist = user_account.register(
+                    email_address=user_data.get('email'), magiclink_issuer=user_data.get('issuer'),
+                    public_address=user_data.get('public_address'))
                 if status is False:
                     json_data = {
                         'status': status,

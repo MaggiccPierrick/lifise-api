@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `user_account` (
     `lastname` TEXT DEFAULT NULL,
     `birthdate` TEXT DEFAULT NULL,
     `email` TEXT NOT NULL,
-    `email_hash` CHAR(128) NOT NULL,
+    `email_hash` CHAR(128) UNIQUE NOT NULL,
     `email_validated` INTEGER NOT NULL,
     `selfie` CHAR(50) DEFAULT NULL,
     `otp_token` TEXT DEFAULT NULL,
@@ -58,4 +58,19 @@ CREATE TABLE IF NOT EXISTS `beneficiary` (
     PRIMARY KEY(`beneficiary_uuid`),
     FOREIGN KEY(`user_uuid`) REFERENCES user_account(`user_uuid`),
     FOREIGN KEY(`beneficiary_user_uuid`) REFERENCES user_account(`user_uuid`)
+);
+
+CREATE TABLE IF NOT EXISTS `token_claim` (
+    `token_claim_uuid` CHAR(36) UNIQUE NOT NULL,
+    `user_uuid` CHAR(36) NOT NULL,
+    `nb_token` FLOAT NOT NULL,
+    `tx_hash` TEXT DEFAULT NULL,
+    `creator_id` CHAR(36) DEFAULT NULL,
+    `created_date` CHAR(30) NOT NULL,
+    `claimed` INTEGER NOT NULL,
+    `claimed_date` CHAR(30) DEFAULT NULL,
+    `deactivated` INTEGER NOT NULL,
+    `deactivated_date` CHAR(30) DEFAULT NULL,
+    PRIMARY KEY(`token_claim_uuid`),
+    FOREIGN KEY(`user_uuid`) REFERENCES user_account(`user_uuid`)
 );
