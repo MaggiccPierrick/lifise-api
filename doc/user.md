@@ -4,6 +4,7 @@
 
 ## Table of contents
 [Register User](#register)  
+[Decline Invitation](#decline-invitation)  
 [Verify If Email Exists](#verify-if-an-email-already-exists)  
 [Login](#login)  
 [Refresh Login](#login-refresh)  
@@ -38,6 +39,28 @@ RESPONSE
 ```
 {
     "message": "success_user_register",
+    "status": true
+}
+```
+
+### Decline Invitation
+_Authorized user: User_  
+Decline invitation and deactivate pre-registered account.  
+
+URI
+```
+POST /api/v1/user/decline
+```
+JSON
+```
+{
+    "user_uuid": ""
+}
+```
+RESPONSE
+```
+{
+    "message": "success_user_deactivated",
     "status": true
 }
 ```
