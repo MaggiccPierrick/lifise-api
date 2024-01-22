@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, create_access_token, create_refresh
 from os import environ as env
 from datetime import datetime, timedelta
 
-from utils.orm.user import UserAccount, Beneficiary
+from utils.orm.user import UserAccount, Beneficiary, TokenClaim
 from utils.api import http_error_400, http_error_401, json_data_required, user_required
 from utils.email import Email
 from utils.redis_db import Redis
@@ -76,6 +76,36 @@ def add_routes(app):
             status, http_code, message = user_account.update_account(public_address=user_data.get('public_address'),
                                                                      magiclink_issuer=user_data.get('issuer'),
                                                                      firstname=firstname, lastname=lastname)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/decline', methods=['POST'])
+    @json_data_required
+    def user_decline():
+        """
+        Decline/remove a user account
+        :return:
+        """
+        mandatory_keys = ['user_uuid']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        user_uuid = request.json.get('user_uuid')
+
+        user_account = UserAccount()
+        status, http_code, message = user_account.decline(user_uuid=user_uuid)
+        if status is True:
+            token_claim = TokenClaim()
+            token_claim.deactivate(user_uuid=user_uuid)
+            subject = "MetaBank"
+            content = "Nous avons bien pris en compte votre demande de ne pas créer votre compte MetaBank " \
+                      "et de ne pas profiter des avantages offerts.\n\nL'équipe MetaBank"
+            email = Email(app)
+            email.send_async(subject=subject, body=content, recipients=[user_account.get('email')])
+
         json_data = {
             'status': status,
             'message': message

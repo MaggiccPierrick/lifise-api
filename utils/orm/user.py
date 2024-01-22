@@ -89,6 +89,20 @@ class UserAccount(Abstract):
 
         return True, 200, "success_user_register", False
 
+    def decline(self, user_uuid):
+        """
+        Decline the creation of an account and remove user data
+        :param user_uuid:
+        :return:
+        """
+        self.load({'user_uuid': user_uuid, 'deactivated': 0})
+        if self.get('user_uuid') is None:
+            return False, 401, "error_not_exist"
+        if self.get('public_address') is not None:
+            return False, 401, 'error_account_active'
+        status, http_code, message = self.deactivate_user()
+        return status, http_code, message
+
     def login(self, magiclink_issuer: str):
         """
         Login the user with MagicLink issuer
@@ -137,7 +151,7 @@ class UserAccount(Abstract):
         else:
             return False, 401, "error_token"
 
-    def is_existing(self, email_address):
+    def is_existing(self, email_address: str):
         """
         Verify if the given account parameters already exist in db
         :param email_address:
@@ -205,19 +219,22 @@ class UserAccount(Abstract):
             updated = True
 
         if updated is True:
+            self.set('deactivated', 0)
+            self.set('deactivated_date', None)
             self.set('updated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
             self.update()
             return True, 200, "success_account_updated"
         else:
             return False, 400, "error_account_update"
 
-    def deactivate_user(self, user_uuid):
+    def deactivate_user(self, user_uuid: str = None):
         """
         Deactivate a user
         :param user_uuid:
         :return:
         """
-        self.load({'user_uuid': user_uuid})
+        if user_uuid is not None:
+            self.load({'user_uuid': user_uuid})
         if self.get('user_uuid') is not None:
             self.set('deactivated', 1)
             self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
@@ -225,7 +242,7 @@ class UserAccount(Abstract):
             return True, 200, "success_user_deactivated"
         return False, 400, "error_not_exist"
 
-    def reactivate_user(self, user_uuid):
+    def reactivate_user(self, user_uuid: str):
         """
         Reactivate a user
         :param user_uuid:
@@ -410,3 +427,31 @@ class TokenClaim(Abstract):
         })
         self.insert()
         return True
+
+    def deactivate(self, user_uuid: str = None, token_claim_uuid: str = None):
+        """
+        Deactivate a given token claim or all token claims of the given user
+        :param user_uuid:
+        :param token_claim_uuid:
+        :return:
+        """
+        if token_claim_uuid is not None:
+            self.load({'token_claim_uuid': token_claim_uuid, 'claimed': 0})
+            if self.get('token_claim_uuid') is None:
+                return False, 400, "error_not_exist"
+            self.set('deactivated', 1)
+            self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+            self.update()
+            return True, 200, "success_deactivated"
+
+        if user_uuid is not None:
+            filter_claim = Filter()
+            filter_claim.add('user_uuid', user_uuid)
+            filter_claim.add('claimed', '0')
+            filter_claim.add('deactivated', '0')
+            active_token_claims = self.list(fields=['token_claim_uuid'], filter_object=filter_claim)
+            for token_claim in active_token_claims:
+                self.deactivate(token_claim_uuid=token_claim.get('token_claim_uuid'))
+            return True, 200, "success_deactivated"
+
+        return False, 400, "error_bad_request"

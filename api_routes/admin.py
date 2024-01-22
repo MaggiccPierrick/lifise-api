@@ -345,6 +345,7 @@ def add_routes(app):
         email = Email(app)
         email_subject = "Créez votre compte MetaBank"
         invitation_link = "{0}/signup?user_uuid=".format(env['APP_FRONT_URL'])
+        decline_link = "{0}/decline?user_uuid=".format(env['APP_FRONT_URL'])
 
         for email_address in unique_emails:
             status, http_code, message, already_exist = user_account.register(email_address=email_address)
@@ -358,13 +359,22 @@ def add_routes(app):
             else:
                 if claimable_tokens > 0:
                     content = "MetaBank vous invite à créer votre compte dès maintenant " \
-                              "et vous offre {0} CAA euros.\n" \
+                              "et vous offre {0} CAA euros.\n\n" \
                               "Cliquez sur le lien suivant pour créer votre compte et obtenir vos CAA :\n" \
-                              "{1}{2}".format(claimable_tokens, invitation_link, user_account.get('user_uuid'))
+                              "{1}{2}\n\n" \
+                              "Si vous ne souhaitez pas créer votre compte MetaBank, " \
+                              "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :\n" \
+                              "{3}{4}\n\nL'équipe MetaBank".format(claimable_tokens, invitation_link,
+                                                                   user_account.get('user_uuid'), decline_link,
+                                                                   user_account.get('user_uuid'))
                 else:
-                    content = "MetaBank vous invite à créer votre compte dès maintenant.\n" \
+                    content = "MetaBank vous invite à créer votre compte dès maintenant.\n\n" \
                               "Cliquez sur le lien suivant pour créer votre compte :\n" \
-                              "{0}{1}".format(invitation_link, user_account.get('user_uuid'))
+                              "{0}{1}\n\n" \
+                              "Si vous ne souhaitez pas créer votre compte MetaBank, " \
+                              "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :\n" \
+                              "{2}{3}\n\nL'équipe MetaBank".format(invitation_link, user_account.get('user_uuid'),
+                                                                   decline_link, user_account.get('user_uuid'))
                 email.send_async(subject=email_subject, body=content, recipients=[user_account.get('email')])
             if claimable_tokens > 0:
                 token_claim = TokenClaim()
@@ -403,10 +413,11 @@ def add_routes(app):
         user_account = UserAccount()
         filter_user = Filter()
         filter_user.add('deactivated', str(deactivated))
-        if pending is True:
-            filter_user.add('public_address', operator=OperatorType.IN)
-        else:
-            filter_user.add('public_address', operator=OperatorType.INN)
+        if deactivated == 0:
+            if pending is True:
+                filter_user.add('public_address', operator=OperatorType.IN)
+            else:
+                filter_user.add('public_address', operator=OperatorType.INN)
         user_accounts = user_account.list(filter_object=filter_user, order='lastname', asc='ASC')
         users_list = []
         for current_user in user_accounts:
