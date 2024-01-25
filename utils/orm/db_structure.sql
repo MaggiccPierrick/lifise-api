@@ -74,3 +74,19 @@ CREATE TABLE IF NOT EXISTS `token_claim` (
     PRIMARY KEY(`token_claim_uuid`),
     FOREIGN KEY(`user_uuid`) REFERENCES user_account(`user_uuid`)
 );
+
+CREATE TABLE IF NOT EXISTS `token_operation` (
+    `token_operation_id` INTEGER NOT NULL AUTO_INCREMENT,
+    `token_operation_uuid` CHAR(36) UNIQUE NOT NULL,
+    `sender_uuid` CHAR(36) DEFAULT NULL,
+    `receiver_uuid` CHAR(36) NOT NULL,
+    `sender_address` CHAR(42) NOT NULL,
+    `receiver_address` CHAR(42) NOT NULL,
+    `token` CHAR(10) NOT NULL,
+    `nb_token` FLOAT NOT NULL,
+    `tx_hash` CHAR(66) DEFAULT NULL,
+    `created_date` CHAR(30) NOT NULL,
+    PRIMARY KEY(`token_operation_id`),
+    FOREIGN KEY(`sender_uuid`) REFERENCES user_account(`user_uuid`),
+    FOREIGN KEY(`receiver_uuid`) REFERENCES user_account(`user_uuid`)
+);
