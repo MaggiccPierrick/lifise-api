@@ -9,6 +9,8 @@ from utils.email import Email
 from utils.redis_db import Redis
 from utils.magic_link import MagicLink
 from utils.security import generate_hash
+from utils.polygon import Polygon
+from utils.orm.blockchain import TokenOperation
 
 
 def add_routes(app):
@@ -76,6 +78,18 @@ def add_routes(app):
             status, http_code, message = user_account.update_account(public_address=user_data.get('public_address'),
                                                                      magiclink_issuer=user_data.get('issuer'),
                                                                      firstname=firstname, lastname=lastname)
+        if status is True and user_account.get('public_address') is not None:
+            polygon = Polygon()
+            status, tx_hash = polygon.send_tx(receiver_address=user_account.get('public_address'),
+                                              nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+            token_operation = TokenOperation()
+            status_to, http_code_to, message_to = token_operation.add_operation(
+                receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
+                receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
+                nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000), tx_hash=tx_hash)
+            if status_to is False:
+                app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
+
         json_data = {
             'status': status,
             'message': message
