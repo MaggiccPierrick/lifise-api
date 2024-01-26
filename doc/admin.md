@@ -243,7 +243,7 @@ RESPONSE
             "updated_date": "2023-12-29T15:18:37.839803Z"
         }
     ],
-    "message": "successful_admin_accounts",
+    "message": "success_admin_accounts",
     "status": true
 }
 ```
@@ -323,7 +323,7 @@ RESPONSE
 ```
 {
     "accounts_not_created": [],                 # returns not created email addresses accounts
-    "message": "successful_user_accounts",
+    "message": "success_user_accounts",
     "status": true
 }
 ```
@@ -345,7 +345,7 @@ X-AUTH-USER: "JWT_token"
 RESPONSE
 ```
 {
-    "message": "successful_user_accounts",
+    "message": "success_user_accounts",
     "status": true,
     "user_accounts": [
         {
@@ -365,6 +365,59 @@ RESPONSE
             "user_uuid": "ddeba27c-3d95-450d-b971-33db6e9fbbec"
         }
     ]
+}
+```
+
+### Get user operations
+_Authorized user: Admin_  
+Get CAA operations of the given user.  
+
+URI  
+_in_page_key_ arg is optional and used to get older received operations (pagination).  
+_out_page_key_ arg is optional and used to get older sent operations (pagination).  
+```
+GET /api/v1/admin/user/operations/<user_uuid>?in_page_key=...&out_page_key=...
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "in_page_key": null,                # send the value in a new request to get the next incoming operations
+    "message": "success_operations",
+    "operations": [
+        {
+            "asset": "CaaEURO",
+            "block": 45111804,
+            "block_time": "2024-01-24T14:21:34.000Z",
+            "from": "0x798bf397ee8601243fd76e57fa9fccbb3db7c1e6",
+            "hash": "0x09ac51db842d87e98a2b3aeb792ab276fd25ece7bda8a64a0e586ba8b0c42187",
+            "to": "0x78e178fe25c8f8247af84315f2ff618b55db0aa7",
+            "value": 10
+        },
+        {
+            "asset": "CaaEURO",
+            "block": 45111401,
+            "block_time": "2024-01-24T14:06:02.000Z",
+            "from": "0x78e178fe25c8f8247af84315f2ff618b55db0aa7",
+            "hash": "0x58964b3ef60fe5b70f9bdb544a336bfc79fe529c3e33af5d23a76ebabf88ce9f",
+            "to": "0x6b2cd455d47026f1fc230a582fbf90f6918235cf",
+            "value": 99
+        },
+        {
+            "asset": "CaaEURO",
+            "block": 44841952,
+            "block_time": "2024-01-16T17:40:03.000Z",
+            "from": "0x798bf397ee8601243fd76e57fa9fccbb3db7c1e6",
+            "hash": "0xc14012446dd7569bbcee5065eb15ade3bb3ffc8c1e79e1e11c9653fb128d2214",
+            "to": "0x78e178fe25c8f8247af84315f2ff618b55db0aa7",
+            "value": 10
+        }
+    ],
+    "out_page_key": null,               # send the value in a new request to get the next outgoing operations
+    "status": true
 }
 ```
 
@@ -446,7 +499,7 @@ RESPONSE
             "symbol": "CaaEURO"
         }
     },
-    "message": "successful_wallet_balance",
+    "message": "success_wallet_balance",
     "status": true
 }
 ```
