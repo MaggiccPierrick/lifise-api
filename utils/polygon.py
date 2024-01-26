@@ -1,6 +1,6 @@
 from web3 import Web3
 from os import environ as env
-from alchemy import Alchemy, Network
+from alchemy import Alchemy, Network, AssetTransfersCategory, exceptions
 
 from utils.log import Logger
 
@@ -129,3 +129,57 @@ class Polygon:
             'matic': matic_balance,
             'token_balance': contract_balance
         }
+
+    def get_operations(self, address: str, in_page_key: str = None, out_page_key: str = None):
+        """
+        Return CAA operations of the address
+        :param address:
+        :param in_page_key:
+        :param out_page_key:
+        :return:
+        """
+        category = [AssetTransfersCategory.ERC20]
+        operations = []
+        try:
+            out_operations = self.alchemy.core.get_asset_transfers(from_address=address, category=category,
+                                                                   contract_addresses=[self.caa_contract],
+                                                                   with_metadata=True, order='desc',
+                                                                   max_count=15, page_key=out_page_key)
+        except exceptions.AlchemyError:
+            return False, 400, "error_bad_request", None, None, None
+
+        out_page_key = out_operations.get('page_key')
+        out_transfers = out_operations.get('transfers')
+        for transfer in out_transfers:
+            operations.append({
+                'hash': transfer.hash,
+                'from': transfer.frm,
+                'to': transfer.to,
+                'value': transfer.value,
+                'asset': transfer.asset,
+                'block': int(transfer.block_num, 16),
+                'block_time': transfer.metadata.block_timestamp
+            })
+
+        try:
+            in_operations = self.alchemy.core.get_asset_transfers(to_address=address, category=category,
+                                                                  contract_addresses=[self.caa_contract],
+                                                                  with_metadata=True, order='desc',
+                                                                  max_count=15, page_key=in_page_key)
+        except exceptions.AlchemyError:
+            return False, 400, "error_bad_request", None, None, None
+
+        in_page_key = in_operations.get('page_key')
+        in_transfers = in_operations.get('transfers')
+        for transfer in in_transfers:
+            operations.append({
+                'hash': transfer.hash,
+                'from': transfer.frm,
+                'to': transfer.to,
+                'value': transfer.value,
+                'asset': transfer.asset,
+                'block': int(transfer.block_num, 16),
+                'block_time': transfer.metadata.block_timestamp
+            })
+        operations = sorted(operations, key=lambda x: x['block'], reverse=True)
+        return True, 200, "success_operations", operations, out_page_key, in_page_key
