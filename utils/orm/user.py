@@ -397,7 +397,7 @@ class Beneficiary(Abstract):
 
 class TokenClaim(Abstract):
     """
-    Beneficiary class extends the base class <abstract> and provides object-like access to the beneficiary DB table.
+    TokenClaim class extends the base class <abstract> and provides object-like access to the token_claim DB table.
     """
     def __init__(self, data=None, adapter=None):
         Abstract.__init__(self, data, adapter)
@@ -455,3 +455,18 @@ class TokenClaim(Abstract):
             return True, 200, "success_deactivated"
 
         return False, 400, "error_bad_request"
+
+    def get_claimable_tokens(self, user_uuid: str):
+        """
+        Return claimable tokens for the given user
+        :param user_uuid:
+        :return:
+        """
+        filter_claim = Filter()
+        filter_claim.add('user_uuid', user_uuid)
+        filter_claim.add('claimed', '0')
+        filter_claim.add('deactivated', '0')
+        claims = self.list(fields=['token_claim_uuid', 'nb_token', 'created_date'], filter_object=filter_claim)
+        total_claim = sum(claim.get('nb_token') for claim in claims)
+        total_claim = float('{:.2f}'.format(total_claim))
+        return claims, total_claim

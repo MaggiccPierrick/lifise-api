@@ -284,6 +284,12 @@ def add_routes(app):
             user_uuid = get_jwt_identity().get('user_uuid')
             user_account.load({'user_uuid': user_uuid})
             selfie, selfie_ext = user_account.get_selfie()
+            balances = {}
+            if user_account.get('public_address') is not None:
+                polygon = Polygon()
+                balances = polygon.get_balance(address=user_account.get('public_address'))
+            token_claim = TokenClaim()
+            user_claims, total_to_claim = token_claim.get_claimable_tokens(user_uuid=user_uuid)
             json_data = {
                 'status': True,
                 'message': 'success_account',
@@ -298,7 +304,10 @@ def add_routes(app):
                     'public_address': user_account.get('public_address'),
                     'selfie': selfie,
                     'selfie_ext': selfie_ext
-                }
+                },
+                'wallet': balances,
+                'token_claim': user_claims,
+                'total_to_claim': total_to_claim
             }
         else:
             user_account.load({'user_uuid': user_uuid})
