@@ -227,7 +227,36 @@ Full personal profile
         "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
     "message": "success_account",
-    "status": true
+    "status": true,
+    "token_claim": [
+        {
+            "created_date": "2024-01-19T17:04:22.440374Z",
+            "nb_token": 11.0,
+            "token_claim_uuid": "308d3996-45a3-440e-9e00-f5e5ee1cf0f2"
+        },
+        {
+            "created_date": "2024-01-18T16:53:33.268209Z",
+            "nb_token": 23.45,
+            "token_claim_uuid": "8e34e7be-f04f-4710-b59b-66ff915a4bfc"
+        },
+        {
+            "created_date": "2024-01-18T16:51:13.916527Z",
+            "nb_token": 12.34,
+            "token_claim_uuid": "8e47cd01-f150-47dd-88df-0a33026e56a5"
+        }
+    ],
+    "total_to_claim": 46.79,
+    "wallet": {
+        "matic": 0.35971071249755476,
+        "token_balance": 1100.0,
+        "token_metadata": {
+            "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
+            "decimals": 6,
+            "logo": null,
+            "name": "CaaEURO Stablecoin",
+            "symbol": "CaaEURO"
+        }
+    }
 }
 ```
 Public profile
