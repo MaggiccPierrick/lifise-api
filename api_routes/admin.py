@@ -456,7 +456,7 @@ def add_routes(app):
     @app.route('/api/v1/admin/user/operations/<user_uuid>', methods=['GET'])
     @jwt_required()
     @admin_required
-    def get_user_operations(user_uuid):
+    def admin_get_user_operations(user_uuid):
         """
         Get user onchain CAA operations
         :return:
