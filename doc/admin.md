@@ -16,6 +16,7 @@
 [Get User Accounts](#get-user-accounts)  
 [Deactivate User Account](#deactivate-user-account)  
 [Reactivate User Account](#reactivate-user-account)  
+[Get Wallet Balance](#get-platform-wallet-balance)  
 
 ## Endpoints description
 ### Login 2FA
@@ -415,6 +416,37 @@ RESPONSE
 ```
 {
     "message": "success_user_reactivated",
+    "status": true
+}
+```
+
+### Get platform wallet balance
+_Authorized user: Admin_  
+Return MATIC and CAA balances of the platform wallet.  
+
+URI
+```
+GET /api/v1/admin/wallet/balance
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "balances": {
+        "matic": 0.399416997999685,
+        "token_balance": 5000000.0,
+        "token_metadata": {
+            "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
+            "decimals": 6,
+            "logo": null,
+            "name": "CaaEURO Stablecoin",
+            "symbol": "CaaEURO"
+        }
+    },
+    "message": "successful_wallet_balance",
     "status": true
 }
 ```

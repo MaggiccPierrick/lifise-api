@@ -9,6 +9,7 @@ from utils.orm.filter import Filter, OperatorType
 from utils.api import http_error_400, http_error_401, json_data_required, admin_required
 from utils.email import Email
 from utils.security import generate_hash
+from utils.polygon import Polygon
 
 
 def add_routes(app):
@@ -497,3 +498,20 @@ def add_routes(app):
             'message': message
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/wallet/balance', methods=['GET'])
+    @jwt_required()
+    @admin_required
+    def get_wallet_balance():
+        """
+        Get platform wallet balances (CAA & MATIC)
+        :return:
+        """
+        polygon = Polygon()
+        balances = polygon.get_balance(address=env['POLYGON_PUBLIC_KEY'])
+        json_data = {
+            'status': True,
+            'message': 'successful_wallet_balance',
+            'balances': balances
+        }
+        return make_response(jsonify(json_data), 200)

@@ -1,6 +1,7 @@
 from web3 import Web3
 from os import environ as env
 from alchemy import Alchemy, Network
+
 from utils.log import Logger
 
 
@@ -8,6 +9,7 @@ class Polygon:
     def __init__(self):
         self.platform_address = env['POLYGON_PUBLIC_KEY']
         self.platform_private_key = env['POLYGON_PRIVATE_KEY']
+        self.caa_contract = env['POLYGON_CAA_CONTRACT']
         self.alchemy_api_key = env['ALCHEMY_API_KEY']
         self.max_retries = int(env['ALCHEMY_MAX_RETRIES'])
         self.rpc_node = "{0}{1}".format(env['POLYGON_RPC_NODE'], self.alchemy_api_key)
@@ -24,7 +26,7 @@ class Polygon:
         self.default_gas = int(env['POLYGON_GAS'])
         self.log = Logger()
 
-    def _build_tx(self, receiver_address: str, nb_token: int, gas: int = None):
+    def _build_tx(self, receiver_address: str, nb_token: int, gas: int = None) -> dict:
         """
 
         :param receiver_address:
@@ -61,7 +63,7 @@ class Polygon:
             return None
         return signed_tx
 
-    def send_tx(self, receiver_address: str, nb_token: int, gas=None):
+    def send_tx(self, receiver_address: str, nb_token: int, gas: int = None):
         """
         Sign a transaction for Polygon network
         :param receiver_address:
@@ -80,3 +82,50 @@ class Polygon:
             return False, None
 
         return True, response.hex()
+
+    def _get_contract_metadata(self, contract_address: str) -> dict:
+        """
+        Return contract metadata
+        :param contract_address:
+        :return: {
+          "name": "CaaEURO Stablecoin",
+          "symbol": "CaaEURO",
+          "decimals": 6,
+          "logo": null
+        }
+        """
+        token_metadata = self.alchemy.core.get_token_metadata(contract_address=contract_address)
+        return {
+            'address': contract_address,
+            'name': token_metadata.name,
+            'symbol': token_metadata.symbol,
+            'decimals': token_metadata.decimals,
+            'logo': token_metadata.logo
+        }
+
+    def get_balance(self, address: str) -> dict:
+        """
+        Return MATIC and contracts balances of the given address
+        :param address:
+        :return:
+        """
+        matic_balance = self.web3.eth.get_balance(address)
+        matic_balance = matic_balance / pow(10, 18)
+
+        token_metadata = self._get_contract_metadata(contract_address=self.caa_contract)
+        contract_balance = 0
+        if len(token_metadata.get('name')) > 0 and token_metadata.get('decimals') is not None:
+            token_balances = self.alchemy.core.get_token_balances(address=address, data=[self.caa_contract])
+            token_balances = token_balances.get('token_balances')
+            for token_balance in token_balances:
+                contract_address = token_balance.contract_address
+                if contract_address == self.caa_contract:
+                    contract_balance = token_balance.token_balance
+                    contract_balance = int(contract_balance, base=16)
+                    contract_balance = contract_balance / pow(10, token_metadata.get('decimals'))
+
+        return {
+            'token_metadata': token_metadata,
+            'matic': matic_balance,
+            'token_balance': contract_balance
+        }
