@@ -327,6 +327,40 @@ def add_routes(app):
             }
         return make_response(jsonify(json_data), 200)
 
+    @app.route('/api/v1/user/operations', methods=['GET'])
+    @jwt_required()
+    @user_required
+    def get_user_operations():
+        """
+        Return user CAA operations
+        :return:
+        """
+        in_page_key = request.args.get('in_page_key')
+        out_page_key = request.args.get('out_page_key')
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        if user_account.get('public_address') is None:
+            json_data = {
+                'status': False,
+                'message': 'error_no_address'
+            }
+            return make_response(jsonify(json_data), 200)
+
+        polygon = Polygon()
+        status, http_code, message, operations, out_page_key, in_page_key = polygon.get_operations(
+            address=user_account.get('public_address'), in_page_key=in_page_key, out_page_key=out_page_key)
+
+        json_data = {
+            'status': status,
+            'message': message,
+            'operations': operations,
+            'out_page_key': out_page_key,
+            'in_page_key': in_page_key
+        }
+        return make_response(jsonify(json_data), 200)
+
     @app.route('/api/v1/user/search', methods=['POST'])
     @json_data_required
     @jwt_required()
