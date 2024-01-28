@@ -11,6 +11,7 @@
 [Logout](#logout)  
 [Update Account](#update-account)  
 [Get Account](#get-account-information)  
+[Get Operations](#get-operations)  
 [Search User](#search-user)  
 [Add A Beneficiary](#add-beneficiary)  
 [Remove A Beneficiary](#remove-beneficiary)  
@@ -227,7 +228,36 @@ Full personal profile
         "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
     "message": "success_account",
-    "status": true
+    "status": true,
+    "token_claim": [
+        {
+            "created_date": "2024-01-19T17:04:22.440374Z",
+            "nb_token": 11.0,
+            "token_claim_uuid": "308d3996-45a3-440e-9e00-f5e5ee1cf0f2"
+        },
+        {
+            "created_date": "2024-01-18T16:53:33.268209Z",
+            "nb_token": 23.45,
+            "token_claim_uuid": "8e34e7be-f04f-4710-b59b-66ff915a4bfc"
+        },
+        {
+            "created_date": "2024-01-18T16:51:13.916527Z",
+            "nb_token": 12.34,
+            "token_claim_uuid": "8e47cd01-f150-47dd-88df-0a33026e56a5"
+        }
+    ],
+    "total_to_claim": 46.79,
+    "wallet": {
+        "matic": 0.35971071249755476,
+        "token_balance": 1100.0,
+        "token_metadata": {
+            "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
+            "decimals": 6,
+            "logo": null,
+            "name": "CaaEURO Stablecoin",
+            "symbol": "CaaEURO"
+        }
+    }
 }
 ```
 Public profile
@@ -243,6 +273,50 @@ Public profile
         "user_uuid": "87780317-546e-4051-a8f1-da4fbbb06ac8"
     },
     "message": "success_account",
+    "status": true
+}
+```
+
+### Get operations
+_Authorized user: User_  
+Return user operations (CAA).  
+
+URI
+_in_page_key_ arg is optional and used to get older received operations (pagination).  
+_out_page_key_ arg is optional and used to get older sent operations (pagination).  
+```
+GET /api/v1/user/operations
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "in_page_key": null,                        # send the value in a new request to get the next incoming operations
+    "message": "success_operations",
+    "operations": [
+        {
+            "asset": "CaaEURO",
+            "block": 45111804,
+            "block_time": "2024-01-24T14:21:34.000Z",
+            "from": "0x798bf397ee8601243fd76e57fa9fccbb3db7c1e6",
+            "hash": "0x09ac51db842d87e98a2b3aeb792ab276fd25ece7bda8a64a0e586ba8b0c42187",
+            "to": "0x78e178fe25c8f8247af84315f2ff618b55db0aa7",
+            "value": 10
+        },
+        {
+            "asset": "CaaEURO",
+            "block": 45111401,
+            "block_time": "2024-01-24T14:06:02.000Z",
+            "from": "0x78e178fe25c8f8247af84315f2ff618b55db0aa7",
+            "hash": "0x58964b3ef60fe5b70f9bdb544a336bfc79fe529c3e33af5d23a76ebabf88ce9f",
+            "to": "0x6b2cd455d47026f1fc230a582fbf90f6918235cf",
+            "value": 99
+        }
+    ],
+    "out_page_key": null,                       # send the value in a new request to get the next outgoing operations
     "status": true
 }
 ```

@@ -15,6 +15,9 @@ boto3 = "*"
 cryptography = "*"
 flask-mail = "*"
 magic-admin = "*"
+web3 = "*"
+alchemy-sdk = "*"
+dataclass-wizard = "*"
 
 [dev-packages]
 

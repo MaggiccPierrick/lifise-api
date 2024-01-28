@@ -9,6 +9,7 @@ from utils.orm.filter import Filter, OperatorType
 from utils.api import http_error_400, http_error_401, json_data_required, admin_required
 from utils.email import Email
 from utils.security import generate_hash
+from utils.polygon import Polygon
 
 
 def add_routes(app):
@@ -260,7 +261,7 @@ def add_routes(app):
 
         json_data = {
             'status': True,
-            'message': 'successful_admin_accounts',
+            'message': 'success_admin_accounts',
             'admin_accounts': admin_list
         }
         return make_response(jsonify(json_data), 200)
@@ -389,7 +390,7 @@ def add_routes(app):
 
         json_data = {
             'status': True,
-            'message': 'successful_user_accounts',
+            'message': 'success_user_accounts',
             'accounts_not_created': not_created
         }
         return make_response(jsonify(json_data), 200)
@@ -447,10 +448,43 @@ def add_routes(app):
 
         json_data = {
             'status': True,
-            'message': 'successful_user_accounts',
+            'message': 'success_user_accounts',
             'user_accounts': users_list
         }
         return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/admin/user/operations/<user_uuid>', methods=['GET'])
+    @jwt_required()
+    @admin_required
+    def admin_get_user_operations(user_uuid):
+        """
+        Get user onchain CAA operations
+        :return:
+        """
+        in_page_key = request.args.get('in_page_key')
+        out_page_key = request.args.get('out_page_key')
+
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        if user_account.get('public_address') is None:
+            json_data = {
+                'status': False,
+                'message': 'error_no_address'
+            }
+            return make_response(jsonify(json_data), 200)
+
+        polygon = Polygon()
+        status, http_code, message, operations, out_page_key, in_page_key = polygon.get_operations(
+            address=user_account.get('public_address'), in_page_key=in_page_key, out_page_key=out_page_key)
+
+        json_data = {
+            'status': status,
+            'message': message,
+            'operations': operations,
+            'out_page_key': out_page_key,
+            'in_page_key': in_page_key
+        }
+        return make_response(jsonify(json_data), http_code)
 
     @app.route('/api/v1/admin/user/deactivate', methods=['POST'])
     @json_data_required
@@ -497,3 +531,20 @@ def add_routes(app):
             'message': message
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/wallet/balance', methods=['GET'])
+    @jwt_required()
+    @admin_required
+    def get_wallet_balance():
+        """
+        Get platform wallet balances (CAA & MATIC)
+        :return:
+        """
+        polygon = Polygon()
+        balances = polygon.get_balance(address=env['POLYGON_PUBLIC_KEY'])
+        json_data = {
+            'status': True,
+            'message': 'success_wallet_balance',
+            'balances': balances
+        }
+        return make_response(jsonify(json_data), 200)

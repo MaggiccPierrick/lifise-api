@@ -9,6 +9,8 @@ from utils.email import Email
 from utils.redis_db import Redis
 from utils.magic_link import MagicLink
 from utils.security import generate_hash
+from utils.polygon import Polygon
+from utils.orm.blockchain import TokenOperation
 
 
 def add_routes(app):
@@ -76,6 +78,18 @@ def add_routes(app):
             status, http_code, message = user_account.update_account(public_address=user_data.get('public_address'),
                                                                      magiclink_issuer=user_data.get('issuer'),
                                                                      firstname=firstname, lastname=lastname)
+        if status is True and user_account.get('public_address') is not None:
+            polygon = Polygon()
+            status, tx_hash = polygon.send_tx(receiver_address=user_account.get('public_address'),
+                                              nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+            token_operation = TokenOperation()
+            status_to, http_code_to, message_to = token_operation.add_operation(
+                receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
+                receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
+                nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000), tx_hash=tx_hash)
+            if status_to is False:
+                app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
+
         json_data = {
             'status': status,
             'message': message
@@ -270,6 +284,12 @@ def add_routes(app):
             user_uuid = get_jwt_identity().get('user_uuid')
             user_account.load({'user_uuid': user_uuid})
             selfie, selfie_ext = user_account.get_selfie()
+            balances = {}
+            if user_account.get('public_address') is not None:
+                polygon = Polygon()
+                balances = polygon.get_balance(address=user_account.get('public_address'))
+            token_claim = TokenClaim()
+            user_claims, total_to_claim = token_claim.get_claimable_tokens(user_uuid=user_uuid)
             json_data = {
                 'status': True,
                 'message': 'success_account',
@@ -284,7 +304,10 @@ def add_routes(app):
                     'public_address': user_account.get('public_address'),
                     'selfie': selfie,
                     'selfie_ext': selfie_ext
-                }
+                },
+                'wallet': balances,
+                'token_claim': user_claims,
+                'total_to_claim': total_to_claim
             }
         else:
             user_account.load({'user_uuid': user_uuid})
@@ -302,6 +325,40 @@ def add_routes(app):
                     'selfie_ext': selfie_ext
                 }
             }
+        return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/user/operations', methods=['GET'])
+    @jwt_required()
+    @user_required
+    def get_user_operations():
+        """
+        Return user CAA operations
+        :return:
+        """
+        in_page_key = request.args.get('in_page_key')
+        out_page_key = request.args.get('out_page_key')
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        if user_account.get('public_address') is None:
+            json_data = {
+                'status': False,
+                'message': 'error_no_address'
+            }
+            return make_response(jsonify(json_data), 200)
+
+        polygon = Polygon()
+        status, http_code, message, operations, out_page_key, in_page_key = polygon.get_operations(
+            address=user_account.get('public_address'), in_page_key=in_page_key, out_page_key=out_page_key)
+
+        json_data = {
+            'status': status,
+            'message': message,
+            'operations': operations,
+            'out_page_key': out_page_key,
+            'in_page_key': in_page_key
+        }
         return make_response(jsonify(json_data), 200)
 
     @app.route('/api/v1/user/search', methods=['POST'])
