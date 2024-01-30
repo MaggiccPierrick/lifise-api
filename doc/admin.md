@@ -361,8 +361,25 @@ RESPONSE
             "public_address": "Ox...,
             "selfie": "IMG_DATA",
             "selfie_ext": "png",
+            "token_claims": {
+                "already_claimed": [],
+                "to_claim": [],
+                "total_claimed": 0.0,
+                "total_to_claim": 0.0
+            },
             "updated_date": "2024-01-10T14:49:08.082977Z",
-            "user_uuid": "ddeba27c-3d95-450d-b971-33db6e9fbbec"
+            "user_uuid": "ddeba27c-3d95-450d-b971-33db6e9fbbec",
+            "wallet": {
+                "matic": 0.0,
+                "token_balance": 0.0,
+                "token_metadata": {
+                    "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
+                    "decimals": 6,
+                    "logo": null,
+                    "name": "CaaEURO Stablecoin",
+                    "symbol": "CaaEURO"
+                }
+            }
         }
     ]
 }
@@ -488,6 +505,7 @@ X-AUTH-USER: "JWT_token"
 RESPONSE
 ```
 {
+    "address": "0x9940a09A974BC71b76D095cEF5E38CFF5fe0ea8c",
     "balances": {
         "matic": 0.399416997999685,
         "token_balance": 5000000.0,
