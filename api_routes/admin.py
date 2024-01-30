@@ -420,6 +420,9 @@ def add_routes(app):
             else:
                 filter_user.add('public_address', operator=OperatorType.INN)
         user_accounts = user_account.list(filter_object=filter_user, order='lastname', asc='ASC')
+
+        token_claim = TokenClaim()
+        polygon = Polygon()
         users_list = []
         for current_user in user_accounts:
             email_validated = False
@@ -429,6 +432,13 @@ def add_routes(app):
             if current_user.get('deactivated') == 0:
                 account_deactivated = False
             selfie, selfie_ext = user_account.get_selfie(filename=current_user.get('selfie'))
+            to_claim, total_to_claim = token_claim.get_token_claims(user_uuid=current_user.get('user_uuid'),
+                                                                    claimed=False)
+            already_claimed, total_claimed = token_claim.get_token_claims(user_uuid=current_user.get('user_uuid'),
+                                                                          claimed=True)
+            balances = {}
+            if current_user.get('public_address') is not None:
+                balances = polygon.get_balance(address=current_user.get('public_address'))
             users_list.append({
                 'email_address': current_user.get('email'),
                 'user_uuid': current_user.get('user_uuid'),
@@ -443,7 +453,14 @@ def add_routes(app):
                 'deactivated_date': current_user.get('deactivated_date'),
                 'public_address': current_user.get('public_address'),
                 'selfie': selfie,
-                'selfie_ext': selfie_ext
+                'selfie_ext': selfie_ext,
+                'token_claims': {
+                    'to_claim': to_claim,
+                    'total_to_claim': total_to_claim,
+                    'already_claimed': already_claimed,
+                    'total_claimed': total_claimed
+                },
+                'wallet': balances,
             })
 
         json_data = {
@@ -545,6 +562,7 @@ def add_routes(app):
         json_data = {
             'status': True,
             'message': 'success_wallet_balance',
-            'balances': balances
+            'balances': balances,
+            'address': env['POLYGON_PUBLIC_KEY']
         }
         return make_response(jsonify(json_data), 200)
