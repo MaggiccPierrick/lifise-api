@@ -16,6 +16,7 @@
 [Add A Beneficiary](#add-beneficiary)  
 [Remove A Beneficiary](#remove-beneficiary)  
 [Get Beneficiaries](#get-beneficiaries)  
+[Claim Tokens](#claim-tokens)  
 
 ## Endpoints description
 ### Register
@@ -405,7 +406,6 @@ HEADER
 X-AUTH-USER: "JWT_token"
 ```
 JSON  
-Add with a public address (Polygon address):  
 ```
 {
     "beneficiary_uuid": "900fe01c-d5f5-40d2-8927-7675f7cf1172"
@@ -452,5 +452,43 @@ RESPONSE
     ],
     "message": "success_beneficiary_retrieved",
     "status": true
+}
+```
+
+### Claim tokens
+_Authorized user: User_  
+Send a list of claim uuid to send tokens to the user.  
+
+URI
+```
+POST /api/v1/user/claim
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON  
+```
+{
+    "claim_uuid": [
+        "308d3996-45a3-440e-9e00-f5e5ee1cf0f2",
+        "8e34e7be-f04f-4710-b59b-66ff915a4bfc",
+        "8e47cd01-f150-47dd-88df-0a33026e56a5",
+        "8e47cd01-f150-47dd-88df-0a33026e56a5",
+        "8e47cd01-f150-47dd-88df-0a33026e56a1"
+    ]
+}
+```
+RESPONSE
+```
+{
+    "message": "success_operation",
+    "status": true,
+    "tx_hash": {
+        "308d3996-45a3-440e-9e00-f5e5ee1cf0f2": "0x6ccbc964eec3f45af8bf730f0d06908a92d858b8f2a5ca916827bc2f636ede4c",       # succeed
+        "8e34e7be-f04f-4710-b59b-66ff915a4bfc": "0x58ef9c73b2d816fccfc05dc47fabeccb7367d08749a9951d9b54d04bac8fec94",       # succeed
+        "8e47cd01-f150-47dd-88df-0a33026e56a1": null,                                                                       # failed
+        "8e47cd01-f150-47dd-88df-0a33026e56a5": "0x1a85a5547afc18b5e721f39f0f7aba4d43fd099331227ff81433952c1eb1606b"        # succeed
+    }
 }
 ```
