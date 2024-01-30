@@ -1,8 +1,25 @@
 from web3 import Web3
 from os import environ as env
 from alchemy import Alchemy, Network, AssetTransfersCategory, exceptions
+from web3.middleware import geth_poa_middleware
+from datetime import datetime
 
 from utils.log import Logger
+
+'''
+def create_wallet():
+    """
+    Create eth address
+    :return:
+    """
+    from eth_account import Account
+    import secrets
+    private = secrets.token_hex(32)
+    private_key = "0x" + private
+    wallet = Account.from_key(private_key)
+    public_address = wallet.address
+    return private_key, public_address
+'''
 
 
 class Polygon:
@@ -10,10 +27,20 @@ class Polygon:
         self.platform_address = env['POLYGON_PUBLIC_KEY']
         self.platform_private_key = env['POLYGON_PRIVATE_KEY']
         self.caa_contract = env['POLYGON_CAA_CONTRACT']
+        self.caa_decimals = int(env['POLYGON_CAA_DECIMALS'])
+        self.caa_contract_abi = [{
+            'constant': False,
+            'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}],
+            'name': 'transfer',
+            'outputs': [{'name': '', 'type': 'bool'}],
+            'type': 'function'
+        }]
+
         self.alchemy_api_key = env['ALCHEMY_API_KEY']
         self.max_retries = int(env['ALCHEMY_MAX_RETRIES'])
         self.rpc_node = "{0}{1}".format(env['POLYGON_RPC_NODE'], self.alchemy_api_key)
-        self.web3 = Web3(Web3.HTTPProvider(self.rpc_node))
+        self.w3 = Web3(Web3.HTTPProvider(self.rpc_node))
+        self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
         if env['POLYGON_NETWORK'] == 'MAINNET':
             self.network = Network.MATIC_MAINNET
@@ -26,9 +53,9 @@ class Polygon:
         self.default_gas = int(env['POLYGON_GAS'])
         self.log = Logger()
 
-    def _build_tx(self, receiver_address: str, nb_token: int, gas: int = None) -> dict:
+    def _build_matic_tx(self, receiver_address: str, nb_token: int, gas: int = None) -> dict:
         """
-
+        Build MATIC transaction
         :param receiver_address:
         :param nb_token:
         :param gas:
@@ -36,19 +63,44 @@ class Polygon:
         """
         if gas is None:
             gas = self.default_gas
-        sender = Web3.toChecksumAddress(self.platform_address)
+        # sender = Web3.toChecksumAddress(self.platform_address)
         receiver = Web3.toChecksumAddress(receiver_address)
-        nonce = self.web3.eth.getTransactionCount(sender)
+        # nonce = self.w3.eth.getTransactionCount(sender)
+        current_datetime = datetime.utcnow()
+        nonce = int(datetime.timestamp(current_datetime) * 1000000)
         tx = {
             'nonce': nonce,
             'to': receiver,
-            'value': self.web3.to_wei(nb_token, 'gwei'),
+            'value': self.w3.to_wei(nb_token, 'gwei'),
             'gas': gas,
             'chainId': self.chain_id,
             'maxFeePerGas': 2000000000,
             'maxPriorityFeePerGas': 2000000000,
         }
         return tx
+
+    def _build_erc20_tx(self, receiver_address: str, nb_token: float):
+        """
+        Build ERC20 token transaction
+        :param receiver_address:
+        :param nb_token:
+        :return:
+        """
+        # sender = Web3.toChecksumAddress(self.platform_address)
+        receiver = Web3.toChecksumAddress(receiver_address)
+        # nonce = self.w3.eth.getTransactionCount(sender)
+        current_datetime = datetime.utcnow()
+        nonce = int(datetime.timestamp(current_datetime) * 1000000)
+        contract_address = Web3.toChecksumAddress(self.caa_contract)
+        contract = self.w3.eth.contract(address=contract_address, abi=self.caa_contract_abi)
+        tx = {
+            'nonce': nonce,
+            'gas': 2000000,
+            'chainId': self.chain_id
+        }
+        nb_token = int(nb_token * pow(10, self.caa_decimals))
+        transaction = contract.functions.transfer(receiver, nb_token).buildTransaction(tx)
+        return transaction
 
     def _sign_tx(self, transaction: dict):
         """
@@ -57,7 +109,7 @@ class Polygon:
         :return:
         """
         try:
-            signed_tx = self.web3.eth.account.sign_transaction(transaction, self.platform_private_key)
+            signed_tx = self.w3.eth.account.sign_transaction(transaction, self.platform_private_key)
         except Exception as e:
             self.log.error("Signing transaction failed with error : {0}".format(e))
             return None
@@ -65,23 +117,40 @@ class Polygon:
 
     def send_tx(self, receiver_address: str, nb_token: int, gas: int = None):
         """
-        Sign a transaction for Polygon network
+        Send MATIC to given address
         :param receiver_address:
         :param nb_token: in gwei
         :param gas:
         :return:
         """
-        transaction = self._build_tx(receiver_address=receiver_address, nb_token=nb_token, gas=gas)
+        transaction = self._build_matic_tx(receiver_address=receiver_address, nb_token=nb_token, gas=gas)
         signed_tx = self._sign_tx(transaction=transaction)
         if signed_tx is None:
             return False, None
         try:
-            response = self.web3.eth.send_raw_transaction(transaction=signed_tx.rawTransaction)
+            response = self.w3.eth.send_raw_transaction(transaction=signed_tx.rawTransaction)
         except Exception as e:
             self.log.error("Sending Polygon transaction failed with error : {0}".format(e))
             return False, None
 
         return True, response.hex()
+
+    def send_erc20(self, receiver_address: str, nb_token: float):
+        """
+        Send ERC20 token to given address
+        :param receiver_address:
+        :param nb_token:
+        :return:
+        """
+        transaction = self._build_erc20_tx(receiver_address=receiver_address, nb_token=nb_token)
+        signed_tx = self._sign_tx(transaction=transaction)
+        try:
+            tx_hash = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
+        except Exception as e:
+            self.log.error(f"Error sending transaction: {e}")
+            return False, None
+
+        return True, tx_hash.hex()
 
     def _get_contract_metadata(self, contract_address: str) -> dict:
         """
@@ -109,7 +178,7 @@ class Polygon:
         :param address:
         :return:
         """
-        matic_balance = self.web3.eth.get_balance(address)
+        matic_balance = self.w3.eth.get_balance(address)
         matic_balance = matic_balance / pow(10, 18)
 
         token_metadata = self._get_contract_metadata(contract_address=self.caa_contract)

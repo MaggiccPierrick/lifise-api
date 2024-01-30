@@ -289,7 +289,8 @@ def add_routes(app):
                 polygon = Polygon()
                 balances = polygon.get_balance(address=user_account.get('public_address'))
             token_claim = TokenClaim()
-            user_claims, total_to_claim = token_claim.get_claimable_tokens(user_uuid=user_uuid)
+            to_claim, total_to_claim = token_claim.get_token_claims(user_uuid=user_uuid, claimed=False)
+            already_claimed, total_claimed = token_claim.get_token_claims(user_uuid=user_uuid, claimed=True)
             json_data = {
                 'status': True,
                 'message': 'success_account',
@@ -306,8 +307,13 @@ def add_routes(app):
                     'selfie_ext': selfie_ext
                 },
                 'wallet': balances,
-                'token_claim': user_claims,
-                'total_to_claim': total_to_claim
+                'token_claims': {
+                    'to_claim': to_claim,
+                    'total_to_claim': total_to_claim,
+                    'already_claimed': already_claimed,
+                    'total_claimed': total_claimed
+                }
+
             }
         else:
             user_account.load({'user_uuid': user_uuid})
@@ -473,6 +479,7 @@ def add_routes(app):
         return make_response(jsonify(json_data), http_code)
 
     @app.route('/api/v1/user/beneficiary/remove', methods=['POST'])
+    @json_data_required
     @jwt_required()
     @user_required
     def remove_beneficiary():
@@ -495,3 +502,39 @@ def add_routes(app):
             'message': message
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/claim', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @user_required
+    def claim_caa():
+        """
+        Claim tokens
+        :return:
+        """
+        mandatory_keys = ['claim_uuid']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        claim_list = request.json.get('claim_uuid')
+        if not isinstance(claim_list, list):
+            return http_error_400()
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        token_claim = TokenClaim()
+        claimed = {}
+        for claim_uuid in claim_list:
+            token_claim.set_data({})
+            status, http_code, message = token_claim.claim(user_uuid=user_uuid,
+                                                           user_address=user_account.get('public_address'),
+                                                           claim_uuid=claim_uuid)
+            claimed[claim_uuid] = token_claim.get('tx_hash')
+
+        json_data = {
+            'status': True,
+            'message': "success_operation",
+            'tx_hash': claimed
+        }
+        return make_response(jsonify(json_data), 200)

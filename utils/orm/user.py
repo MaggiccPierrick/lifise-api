@@ -10,6 +10,7 @@ from utils.orm.filter import Filter
 from utils.security import generate_hash
 from utils.email import check_email_format
 from utils.scaleway import ObjectStorage
+from utils.polygon import Polygon
 
 
 def user_directory(file_type, file_name):
@@ -456,17 +457,49 @@ class TokenClaim(Abstract):
 
         return False, 400, "error_bad_request"
 
-    def get_claimable_tokens(self, user_uuid: str):
+    def get_token_claims(self, user_uuid: str, claimed: bool = False):
         """
         Return claimable tokens for the given user
         :param user_uuid:
+        :param claimed: False = return claimable tokens, True = return already claimed tokens
         :return:
         """
         filter_claim = Filter()
         filter_claim.add('user_uuid', user_uuid)
-        filter_claim.add('claimed', '0')
         filter_claim.add('deactivated', '0')
-        claims = self.list(fields=['token_claim_uuid', 'nb_token', 'created_date'], filter_object=filter_claim)
+        if claimed is True:
+            filter_claim.add('claimed', '1')
+        else:
+            filter_claim.add('claimed', '0')
+        claims = self.list(fields=['token_claim_uuid', 'nb_token', 'tx_hash', 'created_date', 'claimed_date'],
+                           filter_object=filter_claim)
         total_claim = sum(claim.get('nb_token') for claim in claims)
         total_claim = float('{:.2f}'.format(total_claim))
         return claims, total_claim
+
+    def claim(self, user_uuid: str, user_address: str, claim_uuid: str):
+        """
+        Claim the tokens of the given token claim
+        :param user_uuid:
+        :param user_address:
+        :param claim_uuid:
+        :return:
+        """
+        self.load({'token_claim_uuid': claim_uuid, 'user_uuid': user_uuid})
+        if self.get('nb_token') is None:
+            return False, 400, "error_not_exist"
+
+        if self.get('claimed') == 1:
+            return False, 400, "error_already_claimed"
+
+        nb_token = float(self.get('nb_token'))
+
+        polygon = Polygon()
+        status, tx_hash = polygon.send_erc20(receiver_address=user_address, nb_token=nb_token)
+        if status is False:
+            return False, 503, "error_operation_failed"
+        self.set('tx_hash', tx_hash)
+        self.set('claimed', '1')
+        self.set('claimed_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, "success_operation"
