@@ -11,6 +11,7 @@ from utils.security import generate_hash
 from utils.email import check_email_format
 from utils.scaleway import ObjectStorage
 from utils.polygon import Polygon
+from utils.orm.blockchain import TokenOperation
 
 
 def user_directory(file_type, file_name):
@@ -497,6 +498,9 @@ class TokenClaim(Abstract):
                 'nb_token': nb_token
             }
 
+        if len(transactions) == 0:
+            return False, 404, "error_bad_request", None
+
         polygon = Polygon()
         status, http_code, message, tx_hash = polygon.send_batch_tx(transactions=transactions)
         if status is False:
@@ -510,5 +514,10 @@ class TokenClaim(Abstract):
                 self.set('claimed', '1')
                 self.set('claimed_date', current_date)
                 self.update()
+            token_operation = TokenOperation()
+            status_op, http_code_op, message_op = token_operation.add_operation(
+                receiver_uuid=user_uuid, sender_address=env['POLYGON_PUBLIC_KEY'],
+                receiver_address=user_address, token=token_operation.CAA,
+                nb_token=transactions[claim_uuid].get('nb_token'), tx_hash=tx_hash)
             transactions[claim_uuid]['tx_hash'] = operation_hash
         return True, 200, "success_operation", transactions
