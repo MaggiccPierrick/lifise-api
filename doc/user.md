@@ -484,11 +484,17 @@ RESPONSE
 {
     "message": "success_operation",
     "status": true,
-    "tx_hash": {
-        "308d3996-45a3-440e-9e00-f5e5ee1cf0f2": "0x6ccbc964eec3f45af8bf730f0d06908a92d858b8f2a5ca916827bc2f636ede4c",       # succeed
-        "8e34e7be-f04f-4710-b59b-66ff915a4bfc": "0x58ef9c73b2d816fccfc05dc47fabeccb7367d08749a9951d9b54d04bac8fec94",       # succeed
-        "8e47cd01-f150-47dd-88df-0a33026e56a1": null,                                                                       # failed
-        "8e47cd01-f150-47dd-88df-0a33026e56a5": "0x1a85a5547afc18b5e721f39f0f7aba4d43fd099331227ff81433952c1eb1606b"        # succeed
+    "transactions": {
+        "8e34e7be-f04f-4710-b59b-66ff915a4bfc": {
+            "nb_token": 23.45,
+            "receiver": "0x78E178Fe25c8F8247aF84315F2Ff618b55Db0aA7",
+            "tx_hash": "0x1cb5c41f6f35e49c2d4491dbc2ac27c3a70dd3038d8590fc021f5e9a66e845af"     # succeed
+        },
+        "8e47cd01-f150-47dd-88df-0a33026e56a5": {
+            "nb_token": 12.34,
+            "receiver": "0x78E178Fe25c8F8247aF84315F2Ff618b55Db0aA7",
+            "tx_hash": None                                                                     # failed
+        }
     }
 }
 ```

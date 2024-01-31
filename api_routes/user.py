@@ -80,14 +80,14 @@ def add_routes(app):
                                                                      firstname=firstname, lastname=lastname)
         if status is True and user_account.get('public_address') is not None:
             polygon = Polygon()
-            status, tx_hash = polygon.send_tx(receiver_address=user_account.get('public_address'),
-                                              nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+            status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
+                                                    nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
             token_operation = TokenOperation()
-            status_to, http_code_to, message_to = token_operation.add_operation(
+            status_op, http_code_op, message_op = token_operation.add_operation(
                 receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
                 receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
-                nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000), tx_hash=tx_hash)
-            if status_to is False:
+                nb_token=float(env['POLYGON_MATIC_NEW_USER']), tx_hash=tx_hash)
+            if status_op is False:
                 app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
 
         json_data = {
@@ -524,17 +524,12 @@ def add_routes(app):
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
         token_claim = TokenClaim()
-        claimed = {}
-        for claim_uuid in claim_list:
-            token_claim.set_data({})
-            status, http_code, message = token_claim.claim(user_uuid=user_uuid,
-                                                           user_address=user_account.get('public_address'),
-                                                           claim_uuid=claim_uuid)
-            claimed[claim_uuid] = token_claim.get('tx_hash')
-
+        status, http_code, message, transactions = token_claim.claim(user_uuid=user_uuid,
+                                                                     user_address=user_account.get('public_address'),
+                                                                     claim_list=claim_list)
         json_data = {
-            'status': True,
-            'message': "success_operation",
-            'tx_hash': claimed
+            'status': status,
+            'message': message,
+            'transactions': transactions
         }
-        return make_response(jsonify(json_data), 200)
+        return make_response(jsonify(json_data), http_code)

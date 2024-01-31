@@ -2,7 +2,8 @@ from web3 import Web3
 from os import environ as env
 from alchemy import Alchemy, Network, AssetTransfersCategory, exceptions
 from web3.middleware import geth_poa_middleware
-from datetime import datetime
+
+from utils.redis_db import Redis
 
 from utils.log import Logger
 
@@ -20,6 +21,38 @@ def create_wallet():
     public_address = wallet.address
     return private_key, public_address
 '''
+
+
+def lock_nonce(address: str, nonce: int) -> bool:
+    """
+    Set nonce to make tx and lock send feature for the given address
+    :param address:
+    :param nonce:
+    :return: boolean
+    """
+    redis_db = Redis(db=1)
+    redis_connect = redis_db.get_connection()
+    if redis_connect is False:
+        return False
+    current_nonce = redis_connect.get(address)
+    if current_nonce is not None:
+        return False
+    redis_connect.set(address, str(nonce), ex=30)
+    return True
+
+
+def unlock_nonce(address: str) -> bool:
+    """
+    Remove the nonce from lock for the given address
+    :param address:
+    :return: boolean
+    """
+    redis = Redis(db=1)
+    redis_connect = redis.get_connection()
+    if redis_connect is False:
+        return False
+    redis_connect.delete(address)
+    return True
 
 
 class Polygon:
@@ -53,21 +86,18 @@ class Polygon:
         self.default_gas = int(env['POLYGON_GAS'])
         self.log = Logger()
 
-    def _build_matic_tx(self, receiver_address: str, nb_token: int, gas: int = None) -> dict:
+    def _build_matic_tx(self, receiver_address: str, nb_token: int, nonce: int, gas: int = None) -> dict:
         """
         Build MATIC transaction
         :param receiver_address:
         :param nb_token:
+        :param nonce:
         :param gas:
         :return:
         """
         if gas is None:
             gas = self.default_gas
-        # sender = Web3.toChecksumAddress(self.platform_address)
-        receiver = Web3.toChecksumAddress(receiver_address)
-        # nonce = self.w3.eth.getTransactionCount(sender)
-        current_datetime = datetime.utcnow()
-        nonce = int(datetime.timestamp(current_datetime) * 1000000)
+        receiver = Web3.to_checksum_address(receiver_address)
         tx = {
             'nonce': nonce,
             'to': receiver,
@@ -77,29 +107,46 @@ class Polygon:
             'maxFeePerGas': 2000000000,
             'maxPriorityFeePerGas': 2000000000,
         }
+        gas = self.w3.eth.estimate_gas(transaction=tx)
+        gas_price = self.w3.eth.gas_price + 1000
+        tx = {
+            'nonce': nonce,
+            'to': receiver,
+            'value': self.w3.to_wei(nb_token, 'gwei'),
+            'gas': gas,
+            'chainId': self.chain_id,
+            'maxFeePerGas': gas_price,
+            'maxPriorityFeePerGas': gas_price,
+        }
         return tx
 
-    def _build_erc20_tx(self, receiver_address: str, nb_token: float):
+    def _build_erc20_tx(self, receiver_address: str, nb_token: float, nonce: int):
         """
         Build ERC20 token transaction
         :param receiver_address:
         :param nb_token:
+        :param nonce:
         :return:
         """
-        # sender = Web3.toChecksumAddress(self.platform_address)
-        receiver = Web3.toChecksumAddress(receiver_address)
-        # nonce = self.w3.eth.getTransactionCount(sender)
-        current_datetime = datetime.utcnow()
-        nonce = int(datetime.timestamp(current_datetime) * 1000000)
-        contract_address = Web3.toChecksumAddress(self.caa_contract)
+        receiver = Web3.to_checksum_address(receiver_address)
+        contract_address = Web3.to_checksum_address(self.caa_contract)
         contract = self.w3.eth.contract(address=contract_address, abi=self.caa_contract_abi)
         tx = {
             'nonce': nonce,
             'gas': 2000000,
+            'gasPrice': 2000000,
+            'chainId': self.chain_id
+        }
+        gas = self.w3.eth.estimate_gas(transaction=tx)
+        gas_price = self.w3.eth.gas_price
+        tx = {
+            'nonce': nonce,
+            'gas': gas,
+            'gasPrice': gas_price,
             'chainId': self.chain_id
         }
         nb_token = int(nb_token * pow(10, self.caa_decimals))
-        transaction = contract.functions.transfer(receiver, nb_token).buildTransaction(tx)
+        transaction = contract.functions.transfer(receiver, nb_token).build_transaction(tx)
         return transaction
 
     def _sign_tx(self, transaction: dict):
@@ -115,7 +162,7 @@ class Polygon:
             return None
         return signed_tx
 
-    def send_tx(self, receiver_address: str, nb_token: int, gas: int = None):
+    def send_matic(self, receiver_address: str, nb_token: int, gas: int = None):
         """
         Send MATIC to given address
         :param receiver_address:
@@ -123,7 +170,13 @@ class Polygon:
         :param gas:
         :return:
         """
-        transaction = self._build_matic_tx(receiver_address=receiver_address, nb_token=nb_token, gas=gas)
+        sender = Web3.to_checksum_address(self.platform_address)
+        nonce = self.w3.eth.get_transaction_count(sender, 'pending')
+        locked = lock_nonce(address=self.platform_address, nonce=nonce)
+        if locked is False:
+            return False, None
+
+        transaction = self._build_matic_tx(receiver_address=receiver_address, nb_token=nb_token, nonce=nonce, gas=gas)
         signed_tx = self._sign_tx(transaction=transaction)
         if signed_tx is None:
             return False, None
@@ -133,16 +186,18 @@ class Polygon:
             self.log.error("Sending Polygon transaction failed with error : {0}".format(e))
             return False, None
 
+        unlock_nonce(address=self.platform_address)
         return True, response.hex()
 
-    def send_erc20(self, receiver_address: str, nb_token: float):
+    def send_erc20(self, receiver_address: str, nb_token: float, nonce: int):
         """
         Send ERC20 token to given address
         :param receiver_address:
         :param nb_token:
+        :param nonce:
         :return:
         """
-        transaction = self._build_erc20_tx(receiver_address=receiver_address, nb_token=nb_token)
+        transaction = self._build_erc20_tx(receiver_address=receiver_address, nb_token=nb_token, nonce=nonce)
         signed_tx = self._sign_tx(transaction=transaction)
         try:
             tx_hash = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
@@ -151,6 +206,28 @@ class Polygon:
             return False, None
 
         return True, tx_hash.hex()
+
+    def send_batch_tx(self, transactions: dict):
+        """
+        Send a batch of operations and lock feature
+        :param transactions: {tx_uuid: "receiver": "", "nb_token": 10}
+        :return:
+        """
+        sender = Web3.to_checksum_address(self.platform_address)
+        nonce = self.w3.eth.get_transaction_count(sender, 'pending')
+        locked = lock_nonce(address=self.platform_address, nonce=nonce)
+        if locked is False:
+            return False, 503, "error_wait_retry", None
+
+        transactions_hash = {}
+        for tx_uuid, tx_info in transactions.items():
+            status, tx_hash = self.send_erc20(receiver_address=tx_info.get('receiver'),
+                                              nb_token=tx_info.get('nb_token'), nonce=nonce)
+            nonce += 1
+            transactions_hash[tx_uuid] = tx_hash
+
+        unlock_nonce(address=self.platform_address)
+        return True, 200, "success_operation", transactions_hash
 
     def _get_contract_metadata(self, contract_address: str) -> dict:
         """
