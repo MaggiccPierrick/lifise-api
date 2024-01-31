@@ -22,7 +22,7 @@ class TokenOperation(Abstract):
         self.CAA = 'CAA'
         self.tokens = [self.MATIC, self.CAA]
 
-    def add_operation(self, receiver_uuid: str, sender_address: str, receiver_address: str, token: str, nb_token: int,
+    def add_operation(self, receiver_uuid: str, sender_address: str, receiver_address: str, token: str, nb_token: float,
                       tx_hash: str = None, sender_uuid: str = None):
         """
         Save an operation in db

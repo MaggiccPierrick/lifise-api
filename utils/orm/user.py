@@ -477,29 +477,38 @@ class TokenClaim(Abstract):
         total_claim = float('{:.2f}'.format(total_claim))
         return claims, total_claim
 
-    def claim(self, user_uuid: str, user_address: str, claim_uuid: str):
+    def claim(self, user_uuid: str, user_address: str, claim_list: list):
         """
         Claim the tokens of the given token claim
         :param user_uuid:
         :param user_address:
-        :param claim_uuid:
+        :param claim_list: list of claim uuid
         :return:
         """
-        self.load({'token_claim_uuid': claim_uuid, 'user_uuid': user_uuid})
-        if self.get('nb_token') is None:
-            return False, 400, "error_not_exist"
+        transactions = {}
+        for claim_uuid in claim_list:
+            self.load({'token_claim_uuid': claim_uuid, 'user_uuid': user_uuid})
+            if self.get('nb_token') is None or self.get('claimed') == 1:
+                continue
 
-        if self.get('claimed') == 1:
-            return False, 400, "error_already_claimed"
-
-        nb_token = float(self.get('nb_token'))
+            nb_token = float(self.get('nb_token'))
+            transactions[claim_uuid] = {
+                'receiver': user_address,
+                'nb_token': nb_token
+            }
 
         polygon = Polygon()
-        status, tx_hash = polygon.send_erc20(receiver_address=user_address, nb_token=nb_token)
+        status, http_code, message, tx_hash = polygon.send_batch_tx(transactions=transactions)
         if status is False:
-            return False, 503, "error_operation_failed"
-        self.set('tx_hash', tx_hash)
-        self.set('claimed', '1')
-        self.set('claimed_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
-        self.update()
-        return True, 200, "success_operation"
+            return False, http_code, message, None
+
+        current_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        for claim_uuid, operation_hash in tx_hash.items():
+            if operation_hash is not None:
+                self.load({'token_claim_uuid': claim_uuid, 'user_uuid': user_uuid})
+                self.set('tx_hash', operation_hash)
+                self.set('claimed', '1')
+                self.set('claimed_date', current_date)
+                self.update()
+            transactions[claim_uuid]['tx_hash'] = operation_hash
+        return True, 200, "success_operation", transactions
