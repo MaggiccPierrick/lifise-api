@@ -518,6 +518,6 @@ class TokenClaim(Abstract):
             status_op, http_code_op, message_op = token_operation.add_operation(
                 receiver_uuid=user_uuid, sender_address=env['POLYGON_PUBLIC_KEY'],
                 receiver_address=user_address, token=token_operation.CAA,
-                nb_token=transactions[claim_uuid].get('nb_token'), tx_hash=tx_hash)
+                nb_token=transactions[claim_uuid].get('nb_token'), tx_hash=operation_hash)
             transactions[claim_uuid]['tx_hash'] = operation_hash
         return True, 200, "success_operation", transactions
