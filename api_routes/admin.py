@@ -494,6 +494,18 @@ def add_routes(app):
         status, http_code, message, operations, out_page_key, in_page_key = polygon.get_operations(
             address=user_account.get('public_address'), in_page_key=in_page_key, out_page_key=out_page_key)
 
+        token_claim = TokenClaim()
+        filter_claim = Filter()
+        filter_claim.add('user_uuid', user_uuid)
+        user_claims = token_claim.list(fields=['token_claim_uuid', 'tx_hash'], filter_object=filter_claim)
+        tx_hash_claim = {}
+        for current_claim in user_claims:
+            if current_claim.get('tx_hash') is not None:
+                tx_hash_claim[current_claim.get('tx_hash')] = current_claim.get('token_claim_uuid')
+
+        for current_op in operations:
+            current_op['claim_uuid'] = tx_hash_claim.get(current_op.get('hash'))
+
         json_data = {
             'status': status,
             'message': message,
