@@ -129,25 +129,18 @@ class Polygon:
         :return:
         """
         receiver = Web3.to_checksum_address(receiver_address)
+        sender = Web3.to_checksum_address(self.platform_address)
         contract_address = Web3.to_checksum_address(self.caa_contract)
         contract = self.w3.eth.contract(address=contract_address, abi=self.caa_contract_abi)
         tx = {
+            'chainId': self.chain_id,
+            'from': sender,
             'nonce': nonce,
-            'gas': 2000000,
-            'gasPrice': 2000000,
-            'chainId': self.chain_id
-        }
-        gas = self.w3.eth.estimate_gas(transaction=tx)
-        gas_price = self.w3.eth.gas_price
-        tx = {
-            'nonce': nonce,
-            'gas': gas,
-            'gasPrice': gas_price,
-            'chainId': self.chain_id
+            'gasPrice': self.w3.eth.gasPrice,
         }
         nb_token = int(nb_token * pow(10, self.caa_decimals))
-        transaction = contract.functions.transfer(receiver, nb_token).build_transaction(tx)
-        return transaction
+        unsigned_txn = contract.functions.transfer(receiver, nb_token).build_transaction(tx)
+        return unsigned_txn
 
     def _sign_tx(self, transaction: dict):
         """
@@ -200,7 +193,7 @@ class Polygon:
         transaction = self._build_erc20_tx(receiver_address=receiver_address, nb_token=nb_token, nonce=nonce)
         signed_tx = self._sign_tx(transaction=transaction)
         try:
-            tx_hash = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         except Exception as e:
             self.log.error(f"Error sending transaction: {e}")
             return False, None
