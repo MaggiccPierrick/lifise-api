@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from utils.orm.user import UserAccount, Beneficiary, TokenClaim
 from utils.api import http_error_400, http_error_401, json_data_required, user_required
-from utils.email import Email
+from utils.email import Sendgrid
 from utils.redis_db import Redis
 from utils.magic_link import MagicLink
 from utils.security import generate_hash
@@ -117,9 +117,9 @@ def add_routes(app):
             token_claim.deactivate(user_uuid=user_uuid)
             subject = "MetaBank"
             content = "Nous avons bien pris en compte votre demande de ne pas créer votre compte MetaBank " \
-                      "et de ne pas profiter des avantages offerts.\n\nL'équipe MetaBank"
-            email = Email(app)
-            email.send_async(subject=subject, body=content, recipients=[user_account.get('email')])
+                      "et de ne pas profiter des avantages offerts."
+            sendgrid = Sendgrid()
+            sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content)
 
         json_data = {
             'status': status,
@@ -443,10 +443,11 @@ def add_routes(app):
             if status is True:
                 delay = int(env['APP_TOKEN_DELAY']) // 60
                 subject = "MetaBank - Ajout d'un bénéficiaire"
-                content = "Renseigner le code suivant pour valider l'ajout du bénéficiaire (valide {0} minutes) :\n" \
-                          "{1}".format(delay, user_account.get('otp_token'))
-                email = Email(app)
-                email.send_async(subject=subject, body=content, recipients=[user_account.get('email')])
+                content = "Veuillez renseigner le code suivant pour valider l'ajout du bénéficiaire " \
+                          "(expire dans {0} minutes) :<br>".format(delay)
+                sendgrid = Sendgrid()
+                sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content,
+                                    token=user_account.get('otp_token'))
         else:
             status, http_code, message = user_account.check_otp_token(token=token)
             if status is False:

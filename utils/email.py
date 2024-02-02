@@ -1,9 +1,8 @@
 import re
-import threading
 
-from flask_mail import Mail, Message
-from flask import copy_current_request_context
 from os import environ as env
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail as SendgridMail
 
 from utils.log import Logger
 
@@ -21,39 +20,45 @@ def check_email_format(email_address):
         return False
 
 
-class Email:
+class Sendgrid:
     """
     Class to send an email using smtp parameters from config file
     """
-    def __init__(self, flask_app):
-        self.app = flask_app
+    def __init__(self):
         self.log = Logger()
-        self.sender = (env['EMAIL_DISPLAY_NAME'], env['EMAIL_ADDRESS'])
+        self.api_key = env['SENDGRID_API_KEY']
+        self.sender = (env['SENDGRID_SENDER_EMAIL'], env['SENDGRID_SENDER_NAME'])
+        self.template_id = env['SENDGRID_TEMPLATE_ID']
 
-    def send_async(self, subject, recipients, body=None, html=None, bcc=None):
+    def send_email(self, to_emails: list, subject: str, txt_content: str, token: str = None):
         """
-        Send email asynchronously according to parameters
-        :return: True if email sent
+
+        :param to_emails: list of email addresses
+        :param subject:
+        :param txt_content:
+        :param token:
+        :return:
         """
-        if html is None and body is None:
-            return False
-        if not isinstance(recipients, list):
-            return False
+        if len(to_emails) > 1:
+            message = SendgridMail(from_email=self.sender, to_emails=self.sender)
+            for email_address in to_emails:
+                message.add_bcc(email_address)
+        else:
+            message = SendgridMail(from_email=self.sender, to_emails=to_emails)
+
+        message.dynamic_template_data = {
+            'subject': subject,
+            'custom_message': txt_content,
+            'token': token
+        }
+        message.template_id = self.template_id
         try:
-            @copy_current_request_context
-            def send_message(message):
-                mail.send(message)
-
-            mail = Mail(self.app)
-            if body is None:
-                msg = Message(subject=subject, html=html, sender=self.sender, recipients=recipients, bcc=bcc)
-            elif html is None:
-                msg = Message(subject=subject, body=body, sender=self.sender, recipients=recipients, bcc=bcc)
-            else:
-                msg = Message(subject=subject, body=body, html=html, sender=self.sender, recipients=recipients, bcc=bcc)
-            sender = threading.Thread(name='mail_sender', target=send_message, args=(msg,))
-            sender.start()
-            return True
+            sg = SendGridAPIClient(self.api_key)
+            response = sg.send(message)
+            if response.status_code >= 300:
+                self.log.error("Sending email failed , status code : {0}".format(response.status_code))
+                return False
         except Exception as e:
-            self.log.error("Failed to send email. Error = {0}".format(e))
+            self.log.error("Sending email failed with error : {0}".format(e))
             return False
+        return True
