@@ -7,7 +7,7 @@ from utils.orm.admin import AdminAccount
 from utils.orm.user import UserAccount, TokenClaim
 from utils.orm.filter import Filter, OperatorType
 from utils.api import http_error_400, http_error_401, json_data_required, admin_required
-from utils.email import Email
+from utils.email import Sendgrid
 from utils.security import generate_hash
 from utils.polygon import Polygon
 
@@ -34,10 +34,11 @@ def add_routes(app):
             if status is True:
                 delay = int(env['APP_TOKEN_DELAY']) // 60
                 subject = "MetaBank Admin - 2FA login"
-                content = "Connexion à votre compte admin sur MetaBank.\n" \
-                          "Code d'authentification (valide {0} minutes) : {1}".format(delay, admin.get('otp_token'))
-                email = Email(app)
-                email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
+                content = "Une nouvelle connexion à votre compte admin sur MetaBank vient d'être réalisée.<br>" \
+                          "Entrez le code d'authentification suivant (expire dans {0} minutes) :".format(delay)
+                sendgrid = Sendgrid()
+                sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content,
+                                    token=admin.get('otp_token'))
 
             json_data = {
                 'status': status,
@@ -98,8 +99,8 @@ def add_routes(app):
         if status is True:
             subject = "MetaBank Admin - update account"
             content = "Votre compte admin vient d'être mis à jour."
-            email = Email(app)
-            email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
+            sendgrid = Sendgrid()
+            sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content)
         json_data = {
             'status': status,
             'message': message
@@ -130,11 +131,11 @@ def add_routes(app):
                                                           firstname=firstname, lastname=lastname)
         if status is True:
             subject = "MetaBank Admin"
-            content = "Un compte administrateur vient d'être créé avec votre adresse email.\n" \
-                      "Rendez vous sur la page suivante pour créer votre mot de passe :\n" \
+            content = "Un compte administrateur vient d'être créé avec votre adresse email.<br>" \
+                      "Rendez vous sur la page suivante pour créer votre mot de passe :<br>" \
                       "{0}/admin/signin".format(env['APP_FRONT_URL'])
-            email = Email(app)
-            email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
+            sendgrid = Sendgrid()
+            sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content)
         json_data = {
             'status': status,
             'message': message,
@@ -166,11 +167,11 @@ def add_routes(app):
 
         subject = "MetaBank Admin - reset password"
         content = "Nous venons de recevoir une demande de réinitialisation de votre mot de passe " \
-                  "sur la plateforme MetaBank Admin.\n" \
-                  "Copier / coller le code suivant dans le formulaire pour pouvoir créer un nouveau mot de passe.\n" \
-                  "{0}".format(admin.get('otp_token'))
-        email = Email(app)
-        email_sent = email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
+                  "sur la plateforme MetaBank Admin.<br>" \
+                  "Copiez / collez le code suivant dans le formulaire pour pouvoir créer un nouveau mot de passe."
+        sendgrid = Sendgrid()
+        email_sent = sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content,
+                                         token=admin.get('otp_token'))
         if email_sent is False:
             json_data = {
                 'status': False,
@@ -211,8 +212,8 @@ def add_routes(app):
 
         subject = "MetaBank Admin - mot de passe réinitialisé"
         content = "Votre mot de passe a été réinitialisé avec succès."
-        email = Email(app)
-        email_sent = email.send_async(subject=subject, body=content, recipients=[admin.get('email')])
+        sendgrid = Sendgrid()
+        email_sent = sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content)
         json_data = {
             'status': status,
             'message': message
@@ -343,7 +344,7 @@ def add_routes(app):
         not_created = []
         existed = []
         user_account = UserAccount()
-        email = Email(app)
+        sendgrid = Sendgrid()
         email_subject = "Créez votre compte MetaBank"
         invitation_link = "{0}/signup?user_uuid=".format(env['APP_FRONT_URL'])
         decline_link = "{0}/decline?user_uuid=".format(env['APP_FRONT_URL'])
@@ -360,23 +361,23 @@ def add_routes(app):
             else:
                 if claimable_tokens > 0:
                     content = "MetaBank vous invite à créer votre compte dès maintenant " \
-                              "et vous offre {0} CAA euros.\n\n" \
-                              "Cliquez sur le lien suivant pour créer votre compte et obtenir vos CAA :\n" \
-                              "{1}{2}\n\n" \
+                              "et vous offre {0} CAA euros.<br><br>" \
+                              "Cliquez sur le lien suivant pour créer votre compte et obtenir vos CAA :<br>" \
+                              "{1}{2}<br><br>" \
                               "Si vous ne souhaitez pas créer votre compte MetaBank, " \
-                              "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :\n" \
-                              "{3}{4}\n\nL'équipe MetaBank".format(claimable_tokens, invitation_link,
-                                                                   user_account.get('user_uuid'), decline_link,
-                                                                   user_account.get('user_uuid'))
+                              "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :<br>" \
+                              "{3}{4}".format(claimable_tokens, invitation_link,
+                                              user_account.get('user_uuid'), decline_link,
+                                              user_account.get('user_uuid'))
                 else:
-                    content = "MetaBank vous invite à créer votre compte dès maintenant.\n\n" \
-                              "Cliquez sur le lien suivant pour créer votre compte :\n" \
-                              "{0}{1}\n\n" \
+                    content = "MetaBank vous invite à créer votre compte dès maintenant.<br><br>" \
+                              "Cliquez sur le lien suivant pour créer votre compte :<br>" \
+                              "{0}{1}<br><br>" \
                               "Si vous ne souhaitez pas créer votre compte MetaBank, " \
-                              "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :\n" \
-                              "{2}{3}\n\nL'équipe MetaBank".format(invitation_link, user_account.get('user_uuid'),
-                                                                   decline_link, user_account.get('user_uuid'))
-                email.send_async(subject=email_subject, body=content, recipients=[user_account.get('email')])
+                              "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :<br>" \
+                              "{2}{3}".format(invitation_link, user_account.get('user_uuid'),
+                                              decline_link, user_account.get('user_uuid'))
+                sendgrid.send_email(to_emails=[user_account.get('email')], subject=email_subject, txt_content=content)
             if claimable_tokens > 0:
                 token_claim = TokenClaim()
                 token_claim.create(creator_uuid=admin_uuid, user_uuid=user_account.get('user_uuid'),
@@ -384,9 +385,9 @@ def add_routes(app):
 
         if len(existed) > 0 and claimable_tokens > 0:
             subject = "MetaBank vous offre des euros"
-            content = "MetaBank vous offre {0} CAA euros.\n" \
+            content = "MetaBank vous offre {0} CAA euros.<br>" \
                       "Connectez-vous à votre compte pour les percevoir.".format(claimable_tokens)
-            email.send_async(subject=subject, body=content, recipients=[env['EMAIL_ADDRESS']], bcc=existed)
+            sendgrid.send_email(to_emails=existed, subject=subject, txt_content=content)
 
         json_data = {
             'status': True,

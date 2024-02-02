@@ -18,6 +18,7 @@ magic-admin = "*"
 web3 = "*"
 alchemy-sdk = "*"
 dataclass-wizard = "*"
+sendgrid = "*"
 
 [dev-packages]
 
