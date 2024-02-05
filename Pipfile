@@ -19,6 +19,7 @@ web3 = "*"
 alchemy-sdk = "*"
 dataclass-wizard = "*"
 sendgrid = "*"
+pyotp = "*"
 
 [dev-packages]
 
