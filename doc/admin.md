@@ -8,6 +8,8 @@
 [Admin Logout](#logout)  
 [Create Admin Account](#create-admin-account)  
 [Update Admin Account](#update-admin-account)  
+[Generate Admin TOTP](#generate-totp-key)  
+[Activate Admin TOTP](#activate-totp)  
 [Ask Reset Password Token](#create-reset-password-token)  
 [Reset Password](#reset-password)  
 [Get Admin Accounts](#get-admin-accounts)  
@@ -32,7 +34,7 @@ JSON
 {
     "login": "john@doe.com",
     "password": "password",
-    "2fa_token": "098765"       # optional, only to send the 2FA token (2nd call)
+    "2fa_token": "098765"       # mandatory if totp is enabled, and only on the second request (2FA by email)
 }
 ```
 RESPONSE
@@ -151,6 +153,46 @@ RESPONSE
 ```
 {
     "message": "success_account_updated",
+    "status": true
+}
+```
+
+### Generate TOTP key
+_Authorized user: Admin_  
+Set the admin account totp key.  
+
+URI
+```
+GET /api/v1/admin/totp/generate
+```
+RESPONSE
+```
+{
+    "base32": "LLWIPYOEZZGKQ3YHKHEZSOVEROKT6ME6",
+    "message": "success_totp",
+    "otp_auth_url": "otpauth://totp/MetaBank:Admin?secret=LLWIPYOEZZGKQ3YHKHEZSOVEROKT6ME6&issuer=MetaBank",
+    "status": true
+}
+```
+
+### Activate TOTP
+_Authorized user: Admin_  
+Activate the TOTP authentication method.  
+
+URI
+```
+POST /api/v1/admin/totp/activate
+```
+JSON
+```
+{
+    "totp_token": "465426"
+}
+```
+RESPONSE
+```
+{
+    "message": "success_totp",
     "status": true
 }
 ```

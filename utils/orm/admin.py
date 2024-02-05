@@ -1,3 +1,5 @@
+import pyotp
+
 from uuid import uuid4
 from datetime import datetime, timedelta
 from os import environ as env
@@ -18,12 +20,14 @@ class AdminAccount(Abstract):
         self._table = 'admin'
         self._columns = ['admin_uuid', 'firstname', 'lastname', 'email', 'email_hash', 'email_validated',
                          'otp_token', 'otp_expiration', 'password', 'user_salt', 'last_login',
+                         'totp_url', 'totp_base32', 'totp_enabled',
                          'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
-        self._encrypt_fields = ['email', 'firstname', 'lastname', 'otp_token']
+        self._encrypt_fields = ['email', 'firstname', 'lastname', 'otp_token', 'totp_url', 'totp_base32']
         self._primary_key = ['admin_uuid']
         self._defaults = {
             'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             'email_validated': 0,
+            'totp_enabled': 0,
             'deactivated': 0
         }
 
@@ -71,7 +75,7 @@ class AdminAccount(Abstract):
         return True, 200, "success_admin_creation"
 
     def update_account(self, email_address: str = None, firstname: str = None, lastname: str = None,
-                       old_password: str = None, new_password: str = None):
+                       old_password: str = None, new_password: str = None, otp_url: str = None, otp_base32: str = None):
         """
         Update personal information
         :param email_address:
@@ -79,6 +83,8 @@ class AdminAccount(Abstract):
         :param lastname:
         :param old_password:
         :param new_password:
+        :param otp_url:
+        :param otp_base32:
         :return:
         """
         updated = False
@@ -109,12 +115,35 @@ class AdminAccount(Abstract):
                 self.set('user_salt', unique_salt)
                 updated = True
 
+        if otp_url is not None and otp_base32 is not None:
+            self.set('totp_url', otp_url)
+            self.set('totp_base32', otp_base32)
+            updated = True
+
         if updated is True:
             self.set('updated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
             self.update()
             return True, 200, "success_account_updated"
         else:
             return False, 400, "error_account_update"
+
+    def verify_totp(self, token: str):
+        """
+        Verify TOTP token
+        :return:
+        """
+        totp = pyotp.TOTP(self.get("totp_base32"))
+        if not totp.verify(otp=token):
+            return False, 401, "error_totp"
+        return True, 200, "success_totp"
+
+    def enable_totp(self):
+        """
+        Enable 2FA via Time OTP
+        :return:
+        """
+        self.set('totp_enabled', 1)
+        self.update()
 
     def reset_password(self, email_address: str, new_password: str, reset_token: str):
         """
@@ -217,7 +246,7 @@ class AdminAccount(Abstract):
         Verify login and password and generate 2fa token or verify token if given
         :param login: login of the user (email or username)
         :param password: password of the user
-        :param token: 2fa token to verify (if given)
+        :param token: 2fa token to verify (if given) : 2FA email or TOTP if enabled
         """
         login_hash, email_salt = generate_hash(data_to_hash=login, salt=env['APP_DB_HASH_SALT'])
         self.load({'email_hash': login_hash, 'deactivated': '0'})
@@ -228,6 +257,8 @@ class AdminAccount(Abstract):
                                                      salt=self.get('user_salt'))
         if self.get('password') == password_hash:
             if token is None:
+                if self.get('totp_enabled') == 1:
+                    return False, 401, "error_authentication_method"
                 otp_token = '{:06}'.format(randrange(1, 10 ** 6))
                 self.set('otp_token', otp_token)
                 validity_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
@@ -236,19 +267,27 @@ class AdminAccount(Abstract):
                 return True, 200, "success_token_set"
             else:
                 current_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                if self.get('otp_token') is None:
+                if self.get('totp_enabled') == 1:
+                    status, http_code, message = self.verify_totp(token=token)
+                    if status is False:
+                        return status, http_code, message
+                    self.set('last_login', current_time)
+                    self.update()
+                    return True, 200, "success_login"
+                else:
+                    if self.get('otp_token') is None:
+                        return False, 401, "error_login"
+                    if token == self.get('otp_token'):
+                        if self.get('otp_expiration') > current_time:
+                            self.set('last_login', current_time)
+                            self.set('otp_token', None)
+                            self.set('otp_expiration', None)
+                            self.set('email_validated', 1)
+                            self.update()
+                            return True, 200, "success_login"
+                        else:
+                            return False, 401, "error_token_expired"
                     return False, 401, "error_login"
-                if token == self.get('otp_token'):
-                    if self.get('otp_expiration') > current_time:
-                        self.set('last_login', current_time)
-                        self.set('otp_token', None)
-                        self.set('otp_expiration', None)
-                        self.set('email_validated', 1)
-                        self.update()
-                        return True, 200, "success_login"
-                    else:
-                        return False, 401, "error_token_expired"
-                return False, 401, "error_login"
         else:
             return False, 401, "error_login"
 
