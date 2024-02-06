@@ -175,7 +175,7 @@ def add_routes(app):
         if email_sent is False:
             json_data = {
                 'status': False,
-                'message': 'Failed to send token by email'
+                'message': "error_email_not_sent"
             }
             return make_response(jsonify(json_data), 503)
 
@@ -262,7 +262,7 @@ def add_routes(app):
 
         json_data = {
             'status': True,
-            'message': 'success_admin_accounts',
+            'message': "success_admin_accounts",
             'admin_accounts': admin_list
         }
         return make_response(jsonify(json_data), 200)
@@ -391,7 +391,7 @@ def add_routes(app):
 
         json_data = {
             'status': True,
-            'message': 'success_user_accounts',
+            'message': "success_user_accounts",
             'accounts_not_created': not_created
         }
         return make_response(jsonify(json_data), 200)
@@ -466,7 +466,7 @@ def add_routes(app):
 
         json_data = {
             'status': True,
-            'message': 'success_user_accounts',
+            'message': "success_user_accounts",
             'user_accounts': users_list
         }
         return make_response(jsonify(json_data), 200)
@@ -487,7 +487,7 @@ def add_routes(app):
         if user_account.get('public_address') is None:
             json_data = {
                 'status': False,
-                'message': 'error_no_address'
+                'message': "error_no_address"
             }
             return make_response(jsonify(json_data), 200)
 
@@ -574,7 +574,7 @@ def add_routes(app):
         balances = polygon.get_balance(address=env['POLYGON_PUBLIC_KEY'])
         json_data = {
             'status': True,
-            'message': 'success_wallet_balance',
+            'message': "success_wallet_balance",
             'balances': balances,
             'address': env['POLYGON_PUBLIC_KEY']
         }

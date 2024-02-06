@@ -101,7 +101,7 @@ class UserAccount(Abstract):
         if self.get('user_uuid') is None:
             return False, 401, "error_not_exist"
         if self.get('public_address') is not None:
-            return False, 401, 'error_account_active'
+            return False, 401, "error_account_active"
         status, http_code, message = self.deactivate_user()
         return status, http_code, message
 
@@ -113,12 +113,12 @@ class UserAccount(Abstract):
         """
         self.load({'magiclink_issuer': magiclink_issuer})
         if self.get('user_uuid') is None:
-            return False, 401, 'error_not_exist'
+            return False, 401, "error_not_exist"
         if self.get('deactivated') == 1:
-            return False, 401, 'error_deactivated'
+            return False, 401, "error_deactivated"
         self.set('last_login', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         self.update()
-        return True, 200, 'success_login'
+        return True, 200, "success_login"
 
     def set_otp_token(self):
         """
@@ -149,7 +149,7 @@ class UserAccount(Abstract):
                 self.set('otp_expiration', None)
                 self.set('email_validated', 1)
                 self.update()
-                return True, 200, "success_validated"
+                return True, 200, "success_valid"
         else:
             return False, 401, "error_token"
 
@@ -216,7 +216,7 @@ class UserAccount(Abstract):
             storage_status = storage.store_object(object_content=selfie, object_path=path)
             if storage_status is False:
                 self.log.warning("Something went wrong when storing user selfie on Object storage")
-                return False, 503, "Failed to store selfie"
+                return False, 503, "error_selfie_failed"
             self.set('selfie', filename)
             updated = True
 
@@ -241,7 +241,7 @@ class UserAccount(Abstract):
             self.set('deactivated', 1)
             self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
             self.update()
-            return True, 200, "success_user_deactivated"
+            return True, 200, "success_deactivated"
         return False, 400, "error_not_exist"
 
     def reactivate_user(self, user_uuid: str):
@@ -255,7 +255,7 @@ class UserAccount(Abstract):
             self.set('deactivated', 0)
             self.set('deactivated_date', None)
             self.update()
-            return True, 200, "success_user_reactivated"
+            return True, 200, "success_reactivated"
         return False, 400, "error_not_exist"
 
     def get_selfie(self, filename=None):
