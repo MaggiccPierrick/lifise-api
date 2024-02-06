@@ -31,7 +31,7 @@ def add_routes(app):
         if user_account.is_existing(email_address=email_address) is True:
             json_data = {
                 'status': True,
-                'message': "success_already_exist"
+                'message': "success_exist"
             }
         else:
             json_data = {
@@ -201,7 +201,7 @@ def add_routes(app):
         jwt_token = create_access_token(identity=identity)
         json_data = {
             'status': True,
-            'message': 'success_refresh',
+            'message': "success_refresh",
             'jwt_token': jwt_token
         }
         return make_response(jsonify(json_data), 200)
@@ -223,7 +223,7 @@ def add_routes(app):
             if status is False:
                 json_data = {
                     'status': False,
-                    'message': 'error_logout'
+                    'message': "error_logout"
                 }
                 return make_response(jsonify(json_data), 503)
         try:
@@ -232,14 +232,14 @@ def add_routes(app):
             app.logger.warning("Connection to Redis failed - error= {0}".format(e))
             json_data = {
                 'status': False,
-                'message': 'error_logout'
+                'message': "error_logout"
             }
             response = make_response(jsonify(json_data), 503)
             response.headers['Retry-After'] = '10'
             return response
         json_data = {
             'status': True,
-            'message': 'success_logout'
+            'message': "success_logout"
         }
         return make_response(jsonify(json_data), 200)
 
@@ -294,7 +294,7 @@ def add_routes(app):
             already_claimed, total_claimed = token_claim.get_token_claims(user_uuid=user_uuid, claimed=True)
             json_data = {
                 'status': True,
-                'message': 'success_account',
+                'message': "success_account",
                 'account': {
                     'email_address': user_account.get('email'),
                     'user_uuid': user_account.get('user_uuid'),
@@ -321,7 +321,7 @@ def add_routes(app):
             selfie, selfie_ext = user_account.get_selfie()
             json_data = {
                 'status': True,
-                'message': 'success_account',
+                'message': "success_account",
                 'account': {
                     'user_uuid': user_account.get('user_uuid'),
                     'firstname': user_account.get('firstname'),
@@ -351,7 +351,7 @@ def add_routes(app):
         if user_account.get('public_address') is None:
             json_data = {
                 'status': False,
-                'message': 'error_no_address'
+                'message': "error_no_address"
             }
             return make_response(jsonify(json_data), 200)
 

@@ -91,13 +91,13 @@ logger.addHandler(file_handler)
 # Override the response for expired jwt token
 @jwt.expired_token_loader
 def my_expired_token_callback(jwt_header, jwt_data):
-    return make_response(jsonify({'status': False, 'message': 'The JWT token expired'}), 401)
+    return make_response(jsonify({'status': False, 'message': "error_expired"}), 401)
 
 
 # Override the response for invalid jwt token
 @jwt.invalid_token_loader
 def my_invalid_token_callback(invalid_token):
-    return make_response(jsonify({'status': False, 'message': 'The token is invalid: {}'.format(invalid_token)}), 401)
+    return make_response(jsonify({'status': False, 'message': "error_invalid"}), 401)
 
 
 @app.before_request

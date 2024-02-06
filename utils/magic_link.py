@@ -42,18 +42,18 @@ class MagicLink:
                 magic_admin.error.DIDTokenMalformed,
                 magic_admin.error.DIDTokenInvalid) as e:
             self.log.warning('MagicLink DID token error: {0}'.format(e))
-            return False, 401, 'error_magic_link', None
+            return False, 401, "error_magic_link", None
 
         issuer = self.token.get_issuer(did_token=did_token)
         magic_response = self.user.get_metadata_by_issuer(issuer)
         if magic_response.status_code >= 300:
-            return False, 401, 'error_magic_link', None
+            return False, 401, "error_magic_link", None
         response = json.loads(magic_response.content)
         if response.get('status') != 'ok':
-            return False, 401, 'error_magic_link', None
+            return False, 401, "error_magic_link", None
 
         user_data = response.get('data')
-        return True, 200, 'success_login', user_data
+        return True, 200, "success_login", user_data
 
     def logout(self, issuer):
         """
@@ -63,8 +63,8 @@ class MagicLink:
         """
         magic_response = self.user.logout_by_issuer(issuer)
         if magic_response.status_code >= 300:
-            return False, 401, 'error_magic_link'
+            return False, 401, "error_magic_link"
         response = json.loads(magic_response.content)
         if response.get('status') != 'ok':
-            return False, 401, 'error_magic_link'
-        return True, 200, 'success_logout'
+            return False, 401, "error_magic_link"
+        return True, 200, "success_logout"

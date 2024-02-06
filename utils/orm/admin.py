@@ -99,7 +99,7 @@ class AdminAccount(Abstract):
         if email_address is not None and check_email_format(email_address) is True:
             email_address = email_address.lower()
             if self.is_existing(email_address=email_address) is True:
-                return False, 400, "Email address already exists"
+                return False, 400, "error_email_exists"
             email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
             self.set('email', email_address)
             self.set('email_hash', email_address_hash)
@@ -162,7 +162,7 @@ class AdminAccount(Abstract):
         self.set('user_salt', unique_salt)
         self.set('updated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         self.update()
-        return True, 200, "Password updated"
+        return True, 200, "success_updated"
 
     def is_existing(self, email_address):
         """
@@ -198,7 +198,7 @@ class AdminAccount(Abstract):
         """
         if email_address is not None:
             if check_email_format(email_address) is False:
-                return False, 400, "Bad email address format"
+                return False, 400, "error_email_format"
 
             email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
             self.load({'email_hash': email_address_hash, 'deactivated': 0})
@@ -206,14 +206,14 @@ class AdminAccount(Abstract):
             self.load({'admin_uuid': admin_uuid})
 
         if self.get('admin_uuid') is None:
-            return False, 400, "Account does not exist"
+            return False, 400, "error_not_exist"
 
         expiration_date = datetime.utcnow() + timedelta(seconds=int(env['APP_TOKEN_DELAY']))
         token = str(uuid4())[:8]
         self.set('otp_token', token)
         self.set('otp_expiration', expiration_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
         self.update()
-        return True, 200, "Token created"
+        return True, 200, "success_token_set"
 
     def check_otp_token(self, email_address: str, token: str):
         """
@@ -223,7 +223,7 @@ class AdminAccount(Abstract):
         :return:
         """
         if check_email_format(email_address) is False:
-            return False, 400, "Bad email address format"
+            return False, 400, "error_email_format"
 
         email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
         self.load({'email_hash': email_address_hash, 'deactivated': 0})
@@ -232,14 +232,14 @@ class AdminAccount(Abstract):
                 self.set('otp_token', None)
                 self.set('otp_expiration', None)
                 self.update()
-                return False, 401, "Token expired"
+                return False, 401, "error_token_expired"
             else:
                 self.set('otp_token', None)
                 self.set('otp_expiration', None)
                 self.update()
-                return True, 200, "Token validated"
+                return True, 200, "success_token_valid"
         else:
-            return False, 401, "Wrong token"
+            return False, 401, "error_token"
 
     def login(self, login, password, token=None):
         """
@@ -302,7 +302,7 @@ class AdminAccount(Abstract):
             self.set('deactivated', 1)
             self.set('deactivated_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
             self.update()
-            return True, 200, "success_admin_deactivated"
+            return True, 200, "success_deactivated"
         return False, 400, "error_not_exist"
 
     def reactivate_admin(self, admin_uuid):
@@ -316,5 +316,5 @@ class AdminAccount(Abstract):
             self.set('deactivated', 0)
             self.set('deactivated_date', None)
             self.update()
-            return True, 200, "success_admin_reactivated"
+            return True, 200, "success_reactivated"
         return False, 400, "error_not_exist"
