@@ -1,3 +1,5 @@
+import pyotp
+
 from flask import jsonify, make_response, request
 from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity
 from os import environ as env
@@ -101,6 +103,60 @@ def add_routes(app):
             content = "Votre compte admin vient d'être mis à jour."
             sendgrid = Sendgrid()
             sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content)
+        json_data = {
+            'status': status,
+            'message': message
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/totp/generate', methods=['GET'])
+    @jwt_required()
+    @admin_required
+    def generate_otp():
+        """
+        Generate OTP secret key
+        :return:
+        """
+        admin_uuid = get_jwt_identity().get('admin_uuid')
+
+        otp_base32 = pyotp.random_base32()
+        otp_auth_url = pyotp.totp.TOTP(otp_base32).provisioning_uri(name="Admin", issuer_name=env['APP_NAME'])
+
+        admin = AdminAccount()
+        admin.load({'admin_uuid': admin_uuid})
+        status, http_code, message = admin.update_account(otp_url=otp_auth_url, otp_base32=otp_base32)
+
+        json_data = {
+            'status': status,
+            'message': "success_totp",
+            'base32': otp_base32,
+            'otp_auth_url': otp_auth_url
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/totp/activate', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @admin_required
+    def activate_otp():
+        """
+        Activate OTP
+        :return:
+        """
+        mandatory_keys = ['totp_token']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        totp_token = request.json.get('totp_token')
+
+        admin_uuid = get_jwt_identity().get('admin_uuid')
+
+        admin = AdminAccount()
+        admin.load({'admin_uuid': admin_uuid})
+        status, http_code, message = admin.verify_totp(token=totp_token)
+        if status is True:
+            admin.enable_totp()
+
         json_data = {
             'status': status,
             'message': message
