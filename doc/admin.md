@@ -378,13 +378,14 @@ URI
 _deactivated_ arg is optional. By default, the endpoint returns active accounts. Set 'deactivated=true' to get deactivated accounts.  
 _pending_ arg is optional. By default, the endpoint returns completed accounts. Set 'pending=true' to get unconfirmed accounts.  
 ```
-GET /api/v1/admin/users?deactivated=false&pending=false
+GET /api/v1/admin/users?deactivated=false&pending=false     # Return only main information of all the users
+GET /api/v1/admin/users/<user_uuid>                         # Get all details of the user
 ```
 HEADER
 ```
 X-AUTH-USER: "JWT_token"
 ```
-RESPONSE
+RESPONSE (ALL USERS)
 ```
 {
     "message": "success_user_accounts",
@@ -401,29 +402,84 @@ RESPONSE
             "last_login_date": "2024-01-10T14:19:52.570413Z",
             "lastname": "Doe",
             "public_address": "Ox...,
-            "selfie": "IMG_DATA",
-            "selfie_ext": "png",
             "token_claims": {
                 "already_claimed": [],
-                "to_claim": [],
-                "total_claimed": 0.0,
-                "total_to_claim": 0.0
+                "to_claim": []
             },
             "updated_date": "2024-01-10T14:49:08.082977Z",
-            "user_uuid": "ddeba27c-3d95-450d-b971-33db6e9fbbec",
-            "wallet": {
-                "matic": 0.0,
-                "token_balance": 0.0,
-                "token_metadata": {
-                    "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
-                    "decimals": 6,
-                    "logo": null,
-                    "name": "CaaEURO Stablecoin",
-                    "symbol": "CaaEURO"
-                }
-            }
+            "user_uuid": "ddeba27c-3d95-450d-b971-33db6e9fbbec"
         }
     ]
+}
+```
+RESPONSE (USER DETAILS)
+```
+{
+    "message": "success_user_accounts",
+    "status": true,
+    "user_details": {
+        "birthdate": "1996-01-16",
+        "created_date": "2024-01-11T10:54:40.703862Z",
+        "deactivated": false,
+        "deactivated_date": null,
+        "email_address": "john@doe.com",
+        "email_validated": true,
+        "firstname": "John",
+        "last_login_date": "2024-02-14T15:48:03.158734Z",
+        "lastname": "Doe",
+        "public_address": "0x...",
+        "selfie": "IMG DATA",
+        "selfie_ext": "jpg",
+        "token_claims": {
+            "already_claimed": [
+                {
+                    "claimed_date": "2024-01-31T16:42:53.181418Z",
+                    "created_date": "2024-01-31T16:40:49.049071Z",
+                    "nb_token": 66.66,
+                    "token_claim_uuid": "1f82a13a-dabf-46f7-b34b-f68cc64561bc",
+                    "tx_hash": "0x..."
+                },
+                {
+                    "claimed_date": "2024-01-31T16:31:58.046910Z",
+                    "created_date": "2024-01-31T16:17:09.416919Z",
+                    "nb_token": 99.0,
+                    "token_claim_uuid": "20c243a4-0965-4290-8f99-38748fbb07e0",
+                    "tx_hash": "0x..."
+                },
+                {
+                    "claimed_date": "2024-01-31T16:43:19.121733Z",
+                    "created_date": "2024-01-31T16:39:35.317492Z",
+                    "nb_token": 42.0,
+                    "token_claim_uuid": "29b2bdb1-9943-4a88-ac2d-2f32ef18bf24",
+                    "tx_hash": "0x..."
+                }
+            ],
+            "to_claim": [
+                {
+                    "claimed_date": null,
+                    "created_date": "2024-02-01T14:53:45.751256Z",
+                    "nb_token": 1500.0,
+                    "token_claim_uuid": "b9d9ce30-71ba-4c54-8e8e-917b20f27d71",
+                    "tx_hash": null
+                }
+            ],
+            "total_claimed": 1947.45,
+            "total_to_claim": 1500.0
+        },
+        "updated_date": "2024-02-09T10:48:50.072856Z",
+        "user_uuid": "2afa5a02-8b57-403d-8268-cfacbdf9faba",
+        "wallet": {
+            "matic": 0.3592487124946442,
+            "token_balance": 10500.00001,
+            "token_metadata": {
+                "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
+                "decimals": 6,
+                "logo": null,
+                "name": "CaaEURO Stablecoin",
+                "symbol": "CaaEURO"
+            }
+        }
+    }
 }
 ```
 

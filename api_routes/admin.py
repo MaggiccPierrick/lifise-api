@@ -453,62 +453,99 @@ def add_routes(app):
         return make_response(jsonify(json_data), 200)
 
     @app.route('/api/v1/admin/users', methods=['GET'])
+    @app.route('/api/v1/admin/users/<user_uuid>', methods=['GET'])
     @jwt_required()
     @admin_required
-    def get_users_accounts():
+    def get_users_accounts(user_uuid=None):
         """
         Get all users accounts
         :return:
         """
-        deactivated = 0
-        if request.args.get('deactivated') == 'true':
-            deactivated = 1
-
-        pending = False
-        if request.args.get('pending') == 'true':
-            pending = True
-
         user_account = UserAccount()
-        filter_user = Filter()
-        filter_user.add('deactivated', str(deactivated))
-        if deactivated == 0:
-            if pending is True:
-                filter_user.add('public_address', operator=OperatorType.IN)
-            else:
-                filter_user.add('public_address', operator=OperatorType.INN)
-        user_accounts = user_account.list(filter_object=filter_user, order='lastname', asc='ASC')
-
         token_claim = TokenClaim()
-        polygon = Polygon()
-        users_list = []
-        for current_user in user_accounts:
+        if user_uuid is None:
+            deactivated = 0
+            if request.args.get('deactivated') == 'true':
+                deactivated = 1
+
+            pending = False
+            if request.args.get('pending') == 'true':
+                pending = True
+
+            filter_user = Filter()
+            filter_user.add('deactivated', str(deactivated))
+            if deactivated == 0:
+                if pending is True:
+                    filter_user.add('public_address', operator=OperatorType.IN)
+                else:
+                    filter_user.add('public_address', operator=OperatorType.INN)
+            user_accounts = user_account.list(filter_object=filter_user, order='lastname', asc='ASC')
+
+            users_list = []
+            for current_user in user_accounts:
+                email_validated = False
+                if current_user.get('email_validated') == 1:
+                    email_validated = True
+                account_deactivated = True
+                if current_user.get('deactivated') == 0:
+                    account_deactivated = False
+
+                to_claim, total_to_claim = token_claim.get_token_claims(user_uuid=current_user.get('user_uuid'),
+                                                                        claimed=False)
+                users_list.append({
+                    'email_address': current_user.get('email'),
+                    'user_uuid': current_user.get('user_uuid'),
+                    'firstname': current_user.get('firstname'),
+                    'lastname': current_user.get('lastname'),
+                    'birthdate': current_user.get('birthdate'),
+                    'email_validated': email_validated,
+                    'last_login_date': current_user.get('last_login'),
+                    'created_date': current_user.get('created_date'),
+                    'updated_date': current_user.get('updated_date'),
+                    'deactivated': account_deactivated,
+                    'deactivated_date': current_user.get('deactivated_date'),
+                    'public_address': current_user.get('public_address'),
+                    'token_claims': {
+                        'to_claim': to_claim,
+                        'total_to_claim': total_to_claim
+                    }
+                })
+
+            json_data = {
+                'status': True,
+                'message': "success_user_accounts",
+                'user_accounts': users_list
+            }
+        else:
+            user_account.load({'user_uuid': user_uuid})
             email_validated = False
-            if current_user.get('email_validated') == 1:
+            if user_account.get('email_validated') == 1:
                 email_validated = True
             account_deactivated = True
-            if current_user.get('deactivated') == 0:
+            if user_account.get('deactivated') == 0:
                 account_deactivated = False
-            selfie, selfie_ext = user_account.get_selfie(filename=current_user.get('selfie'))
-            to_claim, total_to_claim = token_claim.get_token_claims(user_uuid=current_user.get('user_uuid'),
-                                                                    claimed=False)
-            already_claimed, total_claimed = token_claim.get_token_claims(user_uuid=current_user.get('user_uuid'),
+            selfie, selfie_ext = user_account.get_selfie(filename=user_account.get('selfie'))
+            already_claimed, total_claimed = token_claim.get_token_claims(user_uuid=user_account.get('user_uuid'),
                                                                           claimed=True)
+            to_claim, total_to_claim = token_claim.get_token_claims(user_uuid=user_account.get('user_uuid'),
+                                                                    claimed=False)
+            polygon = Polygon()
             balances = {}
-            if current_user.get('public_address') is not None:
-                balances = polygon.get_balance(address=current_user.get('public_address'))
-            users_list.append({
-                'email_address': current_user.get('email'),
-                'user_uuid': current_user.get('user_uuid'),
-                'firstname': current_user.get('firstname'),
-                'lastname': current_user.get('lastname'),
-                'birthdate': current_user.get('birthdate'),
+            if user_account.get('public_address') is not None:
+                balances = polygon.get_balance(address=user_account.get('public_address'))
+            user_details = {
+                'email_address': user_account.get('email'),
+                'user_uuid': user_account.get('user_uuid'),
+                'firstname': user_account.get('firstname'),
+                'lastname': user_account.get('lastname'),
+                'birthdate': user_account.get('birthdate'),
                 'email_validated': email_validated,
-                'last_login_date': current_user.get('last_login'),
-                'created_date': current_user.get('created_date'),
-                'updated_date': current_user.get('updated_date'),
+                'last_login_date': user_account.get('last_login'),
+                'created_date': user_account.get('created_date'),
+                'updated_date': user_account.get('updated_date'),
                 'deactivated': account_deactivated,
-                'deactivated_date': current_user.get('deactivated_date'),
-                'public_address': current_user.get('public_address'),
+                'deactivated_date': user_account.get('deactivated_date'),
+                'public_address': user_account.get('public_address'),
                 'selfie': selfie,
                 'selfie_ext': selfie_ext,
                 'token_claims': {
@@ -518,13 +555,12 @@ def add_routes(app):
                     'total_claimed': total_claimed
                 },
                 'wallet': balances,
-            })
-
-        json_data = {
-            'status': True,
-            'message': "success_user_accounts",
-            'user_accounts': users_list
-        }
+            }
+            json_data = {
+                'status': True,
+                'message': "success_user_accounts",
+                'user_details': user_details
+            }
         return make_response(jsonify(json_data), 200)
 
     @app.route('/api/v1/admin/user/operations/<user_uuid>', methods=['GET'])
