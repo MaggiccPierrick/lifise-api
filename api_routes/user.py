@@ -80,6 +80,12 @@ def add_routes(app):
                                                                      magiclink_issuer=user_data.get('issuer'),
                                                                      firstname=firstname, lastname=lastname)
         if status is True and user_account.get('public_address') is not None:
+            subject = "Bienvenue chez MetaBank"
+            content = "Votre compte MetaBank vient d'être créé avec succès !<br>" \
+                      "Merci de votre confiance."
+            sendgrid = Sendgrid()
+            sendgrid.send_email(to_emails=[email_address], subject=subject, txt_content=content)
+
             polygon = Polygon()
             status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
                                                     nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
