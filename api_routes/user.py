@@ -448,7 +448,7 @@ def add_routes(app):
             status, http_code, message = user_account.set_otp_token()
             if status is True:
                 delay = int(env['APP_TOKEN_DELAY']) // 60
-                subject = "MetaBank - Ajout d'un bénéficiaire"
+                subject = "MetaBank - Nouveau bénéficiaire"
                 content = "Veuillez renseigner le code suivant pour valider l'ajout du bénéficiaire " \
                           "(expire dans {0} minutes) :<br>".format(delay)
                 sendgrid = Sendgrid()
