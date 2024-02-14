@@ -11,12 +11,13 @@
 [Logout](#logout)  
 [Update Account](#update-account)  
 [Get Account](#get-account-information)  
-[Get Operations](#get-operations)  
+[Retrieve Operations](#get-operations)  
 [Search User](#search-user)  
 [Add A Beneficiary](#add-beneficiary)  
 [Remove A Beneficiary](#remove-beneficiary)  
 [Get Beneficiaries](#get-beneficiaries)  
 [Claim Tokens](#claim-tokens)  
+[Assistance Message](#assistance-message)  
 
 ## Endpoints description
 ### Register
@@ -498,5 +499,32 @@ RESPONSE
             "tx_hash": None                                                                     # failed
         }
     }
+}
+```
+
+### Assistance message
+_Authorized user: User_  
+Send a message to admin for assistance.  
+Message is sent to email addresses of active administrators.  
+
+URI
+```
+POST /api/v1/user/assistance
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON  
+```
+{
+    "message": "Help !"
+}
+```
+RESPONSE
+```
+{
+    "message": "success_sent",
+    "status": true
 }
 ```

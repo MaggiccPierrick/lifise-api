@@ -12,6 +12,7 @@ from utils.security import generate_hash
 from utils.polygon import Polygon
 from utils.orm.blockchain import TokenOperation
 from utils.orm.filter import Filter
+from utils.orm.admin import AdminAccount
 
 
 def add_routes(app):
@@ -553,3 +554,49 @@ def add_routes(app):
             'transactions': transactions
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/assistance', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @user_required
+    def user_assistance():
+        """
+        Send message to admin for assistance
+        :return:
+        """
+        mandatory_keys = ['message']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        user_message = request.json.get('message')
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+
+        admin = AdminAccount()
+        filter_admin = Filter()
+        filter_admin.add('deactivated', '0')
+        active_admins = admin.list(fields=['email'], filter_object=filter_admin)
+        admin_emails = []
+        for active_admin in active_admins:
+            admin_emails.append(active_admin.get('email'))
+
+        sendgrid = Sendgrid()
+        subject = "MetaBank Admin : nouvelle demande d'assistance"
+        content = "Un utilisateur vient d'envoyer le message suivant :<br>{0}<br>" \
+                  "Adresse email de l'utilisateur : {1}".format(user_message, user_account.get('email'))
+        sendgrid.send_email(to_emails=admin_emails, subject=subject, txt_content=content,
+                            token=user_account.get('otp_token'))
+
+        subject = "MetaBank Assistance"
+        content = "Nous avons bien reçu votre message, nous vous répondrons dans les plus brefs délais.<br><br>" \
+                  "Votre message : <br>{0}".format(user_message)
+        sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content,
+                            token=user_account.get('otp_token'))
+
+        json_data = {
+            'status': True,
+            'message': "success_sent"
+        }
+        return make_response(jsonify(json_data), 200)
