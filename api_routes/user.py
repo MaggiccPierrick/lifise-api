@@ -583,7 +583,7 @@ def add_routes(app):
             admin_emails.append(active_admin.get('email'))
 
         sendgrid = Sendgrid()
-        subject = "MetaBank Admin : nouvelle demande d'assistance"
+        subject = "MetaBank Admin : nouvelle demande assistance"
         content = "Un utilisateur vient d'envoyer le message suivant :<br>{0}<br>" \
                   "Adresse email de l'utilisateur : {1}".format(user_message, user_account.get('email'))
         sendgrid.send_email(to_emails=admin_emails, subject=subject, txt_content=content,
