@@ -87,6 +87,18 @@ def add_routes(app):
             sendgrid = Sendgrid()
             sendgrid.send_email(to_emails=[email_address], subject=subject, txt_content=content)
 
+            admin = AdminAccount()
+            filter_admin = Filter()
+            filter_admin.add('deactivated', '0')
+            active_admins = admin.list(fields=['email'], filter_object=filter_admin)
+            admin_emails = []
+            for active_admin in active_admins:
+                admin_emails.append(active_admin.get('email'))
+            subject_admin = "MetaBank Admin : nouvel enregistrement"
+            content_admin = "Un nouvel utilisateur vient de s'enregistrer sur la plateforme.<br>" \
+                            "Adresse email de l'utilisateur : {0}".format(email_address)
+            sendgrid.send_email(to_emails=admin_emails, subject=subject_admin, txt_content=content_admin)
+
             polygon = Polygon()
             status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
                                                     nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
@@ -586,14 +598,12 @@ def add_routes(app):
         subject = "MetaBank Admin : nouvelle demande assistance"
         content = "Un utilisateur vient d'envoyer le message suivant :<br>{0}<br>" \
                   "Adresse email de l'utilisateur : {1}".format(user_message, user_account.get('email'))
-        sendgrid.send_email(to_emails=admin_emails, subject=subject, txt_content=content,
-                            token=user_account.get('otp_token'))
+        sendgrid.send_email(to_emails=admin_emails, subject=subject, txt_content=content)
 
         subject = "MetaBank Assistance"
         content = "Nous avons bien reçu votre message, nous vous répondrons dans les plus brefs délais.<br><br>" \
                   "Votre message : <br>{0}".format(user_message)
-        sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content,
-                            token=user_account.get('otp_token'))
+        sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content)
 
         json_data = {
             'status': True,
