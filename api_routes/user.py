@@ -82,8 +82,9 @@ def add_routes(app):
                                                                      firstname=firstname, lastname=lastname)
         if status is True and user_account.get('public_address') is not None:
             subject = "Bienvenue chez MetaBank"
-            content = "Votre compte MetaBank vient d'être créé avec succès !<br>" \
-                      "Merci de votre confiance."
+            content = "Nous vous confirmons que votre compte a été ouvert avec succès " \
+                      "et que votre enregistrement en tant qu’utilisateur de MetaBank-France est terminé.<br>" \
+                      "Nous vous invitons dès à présent à explorer les fonctionnalités.<br>"
             sendgrid = Sendgrid()
             sendgrid.send_email(to_emails=[email_address], subject=subject, txt_content=content)
 
@@ -135,8 +136,12 @@ def add_routes(app):
             token_claim = TokenClaim()
             token_claim.deactivate(user_uuid=user_uuid)
             subject = "MetaBank"
-            content = "Nous avons bien pris en compte votre demande de ne pas créer votre compte MetaBank " \
-                      "et de ne pas profiter des avantages offerts."
+            content = "Vous avez été invité à rejoindre Metabank-France et à collecter votre cadeau " \
+                      "en cliquant sur le bouton « réclamer ». " \
+                      "Vous avez souhaité ne pas y répondre favorablement.<br>" \
+                      "S’il s’agit d’une erreur ou si vous changez d'avis, n'hésitez pas à nous contacter " \
+                      "pour ouvrir votre compte utilisateur MetaBank-France.<br>" \
+                      "Dans le cas contraire, nous vous remercions pour votre lecture."
             sendgrid = Sendgrid()
             sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content)
 
@@ -457,14 +462,14 @@ def add_routes(app):
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
 
+        sendgrid = Sendgrid()
         if token is None:
             status, http_code, message = user_account.set_otp_token()
             if status is True:
                 delay = int(env['APP_TOKEN_DELAY']) // 60
-                subject = "MetaBank - Nouveau bénéficiaire"
-                content = "Veuillez renseigner le code suivant pour valider l'ajout du bénéficiaire " \
-                          "(expire dans {0} minutes) :<br>".format(delay)
-                sendgrid = Sendgrid()
+                subject = "MetaBank - Demande de confirmation"
+                content = "Veuillez renseigner le code suivant pour confirmer l'ajout du bénéficiaire " \
+                          "(le code expire dans {0} minutes) :<br>".format(delay)
                 sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content,
                                     token=user_account.get('otp_token'))
         else:
@@ -486,6 +491,18 @@ def add_routes(app):
             else:
                 status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, email=email_address,
                                                                  public_address=public_address)
+
+            subject = "MetaBank - Nouveau bénéficiaire"
+            if status is True:
+                content = "Nous vous confirmons que vous avez ajouté un nouveau bénéficiaire avec succès. " \
+                          "Vous pouvez dés à présent réaliser des opérations avec ce nouveau bénéficiaire."
+            else:
+                content = "Nous vous informons qu'une erreur s'est produite lors de l'ajout du nouveau bénéficiaire. " \
+                          "Merci de patienter quelques instants et de réessayer. Si l'erreur persiste, " \
+                          "merci de nous contacter via le formulaire d'assistance dans votre interface.<br>" \
+                          "Nous vous prions de nous excuser pour la gêne occasionée."
+            sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content)
+
         json_data = {
             'status': status,
             'message': message
@@ -601,8 +618,13 @@ def add_routes(app):
         sendgrid.send_email(to_emails=admin_emails, subject=subject, txt_content=content)
 
         subject = "MetaBank Assistance"
-        content = "Nous avons bien reçu votre message, nous vous répondrons dans les plus brefs délais.<br><br>" \
-                  "Votre message : <br>{0}".format(user_message)
+        content = "Nous vous confirmons la bonne réception de votre demande d’assistance, " \
+                  "et nous vous confirmons qu’elle est en cours de traitement.<br>" \
+                  "Nos équipes s’engagent à vous répondre dans les meilleurs délais pour la résolution " \
+                  "du problème que vous rencontrez.<br>" \
+                  "Nous vous remercions pour votre patience et votre collaboration afin de résoudre " \
+                  "au plus vite votre besoin d’assistance.<br>" \
+                  "Pour rappel, voici votre message : <br>{0}".format(user_message)
         sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content)
 
         json_data = {

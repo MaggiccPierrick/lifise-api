@@ -416,23 +416,37 @@ def add_routes(app):
                 user_account.load({'email_hash': email_address_hash})
             else:
                 if claimable_tokens > 0:
-                    content = "MetaBank vous invite à créer votre compte dès maintenant " \
-                              "et vous offre {0} CAA euros.<br><br>" \
-                              "Cliquez sur le lien suivant pour créer votre compte et obtenir vos CAA :<br>" \
-                              "{1}{2}<br><br>" \
+                    content = "Vous êtes invité à rejoindre Metabank-France et à collecter votre cadeau " \
+                              "de {nb_token} CAA euros en cliquant sur le lien suivant :<br>" \
+                              "{invitation_link}{user_uuid}<br>" \
+                              "<br>MetaBank-France est la première Néo-banque Française web3 grand public. " \
+                              "C’est une Fintech Mass Market issue de l’univers crypto.<br>" \
+                              "Metabank-France c’est : un exchange, un euro stable coin et " \
+                              "un utility Token de Gouvernance.<br>" \
+                              "Notre Slogan : « Liberty – Safety – Trust »<br><br>" \
+                              "Pour nous rejoindre, vous devez disposer d’une simple adresse email " \
+                              "et suivre votre lien d'enregistrement ci-dessus puis vous laisser guider !<br><br>" \
                               "Si vous ne souhaitez pas créer votre compte MetaBank, " \
                               "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :<br>" \
-                              "{3}{4}".format(claimable_tokens, invitation_link,
-                                              user_account.get('user_uuid'), decline_link,
-                                              user_account.get('user_uuid'))
+                              "{decline_link}{user_uuid}".format(nb_token=claimable_tokens,
+                                                                 invitation_link=invitation_link,
+                                                                 user_uuid=user_account.get('user_uuid'),
+                                                                 decline_link=decline_link)
                 else:
-                    content = "MetaBank vous invite à créer votre compte dès maintenant.<br><br>" \
-                              "Cliquez sur le lien suivant pour créer votre compte :<br>" \
-                              "{0}{1}<br><br>" \
+                    content = "Vous êtes invité à rejoindre Metabank-France en cliquant sur le lien suivant :<br>" \
+                              "{invitation_link}{user_uuid}<br>" \
+                              "<br>MetaBank-France est la première Néo-banque Française web3 grand public. " \
+                              "C’est une Fintech Mass Market issue de l’univers crypto.<br>" \
+                              "Metabank-France c’est : un exchange, un euro stable coin et " \
+                              "un utility Token de Gouvernance.<br>" \
+                              "Notre Slogan : « Liberty – Safety – Trust »<br><br>" \
+                              "Pour nous rejoindre, vous devez disposer d’une simple adresse email " \
+                              "et suivre votre lien d'enregistrement ci-dessus puis vous laisser guider !<br><br>" \
                               "Si vous ne souhaitez pas créer votre compte MetaBank, " \
                               "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :<br>" \
-                              "{2}{3}".format(invitation_link, user_account.get('user_uuid'),
-                                              decline_link, user_account.get('user_uuid'))
+                              "{decline_link}{user_uuid}".format(invitation_link=invitation_link,
+                                                                 user_uuid=user_account.get('user_uuid'),
+                                                                 decline_link=decline_link)
                 sendgrid.send_email(to_emails=[user_account.get('email')], subject=email_subject, txt_content=content)
             if claimable_tokens > 0:
                 token_claim = TokenClaim()
@@ -441,8 +455,8 @@ def add_routes(app):
 
         if len(existed) > 0 and claimable_tokens > 0:
             subject = "MetaBank vous offre des euros"
-            content = "MetaBank vous offre {0} CAA euros.<br>" \
-                      "Connectez-vous à votre compte pour les percevoir.".format(claimable_tokens)
+            content = "MetaBank-France vous offre {0} CAA euros.<br>" \
+                      "Connectez-vous à votre compte pour les collecter.".format(claimable_tokens)
             sendgrid.send_email(to_emails=existed, subject=subject, txt_content=content)
 
         json_data = {
