@@ -712,6 +712,6 @@ def add_routes(app):
         json_data = {
             'status': True,
             'message': "success_purchase",
-            'purchase': purchase_list
+            'orders': purchase_list
         }
         return make_response(jsonify(json_data), 200)

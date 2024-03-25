@@ -6,9 +6,9 @@ from os import environ as env
 from datetime import datetime
 
 from utils.orm.admin import AdminAccount
-from utils.orm.user import UserAccount, TokenClaim
+from utils.orm.user import UserAccount, TokenClaim, UserPurchase
 from utils.orm.filter import Filter, OperatorType
-from utils.api import http_error_400, http_error_401, json_data_required, admin_required
+from utils.api import http_error_400, http_error_401, http_error_403, json_data_required, admin_required
 from utils.email import Sendgrid
 from utils.security import generate_hash
 from utils.polygon import Polygon
@@ -667,6 +667,77 @@ def add_routes(app):
             'message': message
         }
         return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/admin/user/purchase/order/<user_uuid>', methods=['GET'])
+    @jwt_required()
+    @admin_required
+    def admin_get_user_orders(user_uuid):
+        """
+        Get user orders
+        :return:
+        """
+        user_purchase = UserPurchase()
+        filter_purchase = Filter()
+        filter_purchase.add('user_uuid', user_uuid)
+        purchase_list = user_purchase.list(fields=['user_purchase_uuid', 'nb_token', 'total_price_eur', 'reference',
+                                                   'amount_received', 'payment_date', 'tx_hash', 'created_date'],
+                                           filter_object=filter_purchase, order='created_date', asc='DESC')
+        json_data = {
+            'status': True,
+            'message': "success_purchase",
+            'orders': purchase_list
+        }
+        return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/admin/user/purchase/order/confirm', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @admin_required
+    def order_confirm_payment():
+        """
+        Confirm order payment received
+        :return:
+        """
+        mandatory_keys = ['user_uuid', 'user_purchase_uuid', 'amount_received']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        user_uuid = request.json.get('user_uuid')
+        user_purchase_uuid = request.json.get('user_purchase_uuid')
+        amount_received = float(request.json.get('amount_received'))
+        if amount_received <= 0:
+            return http_error_400()
+
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        if user_account.get('public_address') is None:
+            return http_error_403(message="error_public_address")
+
+        user_purchase = UserPurchase()
+        user_purchase.load({'user_uuid': user_uuid, 'user_purchase_uuid': user_purchase_uuid})
+        if user_purchase.get('amount_received') is not None:
+            return http_error_403(message="error_already_confirmed")
+
+        transaction = {
+            user_purchase_uuid: {
+                'receiver': user_account.get('public_address'),
+                'nb_token': amount_received
+            }
+        }
+        polygon = Polygon()
+        status_tx, http_code_tx, message_tx, tx_hash = polygon.send_batch_tx(transactions=transaction)
+        if status_tx is True:
+            status, message, http_code = user_purchase.confirm_payment(amount_received=amount_received,
+                                                                       tx_hash=tx_hash.get(user_purchase_uuid))
+            if status is False:
+                app.logger.error("Error during payment confirmation, tx hash = {0}".format(
+                    tx_hash.get(user_purchase_uuid)))
+
+        json_data = {
+            'status': status_tx,
+            'message': message_tx
+        }
+        return make_response(jsonify(json_data), http_code_tx)
 
     @app.route('/api/v1/admin/wallet/balance', methods=['GET'])
     @jwt_required()

@@ -582,7 +582,7 @@ RESPONSE
 ```
 {
     "message": "success_purchase",
-    "purchase": [
+    "orders": [
         {
             "created_date": "2024-03-25T15:01:26.318156Z",
             "nb_token": 400.0,

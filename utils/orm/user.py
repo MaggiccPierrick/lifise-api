@@ -558,3 +558,19 @@ class UserPurchase(Abstract):
         })
         self.insert()
         return True, 200, "success_saved"
+
+    def confirm_payment(self, amount_received: float, tx_hash: str):
+        """
+        Confirm a payment
+        :param amount_received:
+        :param tx_hash:
+        :return:
+        """
+        if self.get('user_purchase_uuid') is None:
+            return False, 400, "error_unknown_order"
+
+        self.set('amount_received', amount_received)
+        self.set('tx_hash', tx_hash)
+        self.set('payment_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, "success_saved"
