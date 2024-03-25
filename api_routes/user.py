@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, create_access_token, create_refresh
 from os import environ as env
 from datetime import datetime, timedelta
 
-from utils.orm.user import UserAccount, Beneficiary, TokenClaim
+from utils.orm.user import UserAccount, Beneficiary, TokenClaim, UserPurchase
 from utils.api import http_error_400, http_error_401, json_data_required, user_required
 from utils.email import Sendgrid
 from utils.redis_db import Redis
@@ -630,5 +630,88 @@ def add_routes(app):
         json_data = {
             'status': True,
             'message': "success_sent"
+        }
+        return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/user/purchase/order', methods=['POST'])
+    @json_data_required
+    @jwt_required()
+    @user_required
+    def order_purchase():
+        """
+        Create an order to purchase token
+        :return:
+        """
+        mandatory_keys = ['nb_tokens']
+        for mandatory_key in mandatory_keys:
+            if mandatory_key not in request.json:
+                return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
+        nb_tokens = request.json.get('nb_tokens')
+
+        if nb_tokens < int(env['APP_MIN_BUY']):
+            return http_error_400(message='error_not_enough')
+
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_purchase = UserPurchase()
+        status, http_code, message = user_purchase.add_order(user_uuid=user_uuid, nb_token=nb_tokens)
+        if status is False:
+            json_data = {
+                'status': status,
+                'message': message
+            }
+            return make_response(jsonify(json_data), http_code)
+
+        admin = AdminAccount()
+        filter_admin = Filter()
+        filter_admin.add('deactivated', '0')
+        active_admins = admin.list(fields=['email'], filter_object=filter_admin)
+        admin_emails = []
+        for active_admin in active_admins:
+            admin_emails.append(active_admin.get('email'))
+
+        sendgrid = Sendgrid()
+        subject = "MetaBank Admin : nouvel achat"
+        user_url = "{0}/admin/user/{1}".format(env['APP_FRONT_URL'], user_uuid)
+        content = "Un utilisateur vient de créer un ordre d'achat :<br>" \
+                  "Fiche client : {0}<br>" \
+                  "Référence : {1}<br>" \
+                  "Montant : {2} EUR".format(user_url, user_purchase.get('reference'),
+                                             user_purchase.get('total_price_eur'))
+        sendgrid.send_email(to_emails=admin_emails, subject=subject, txt_content=content)
+
+        json_data = {
+            'status': status,
+            'message': message,
+            'bank_account': {
+                'vendor_name': 'MetaBank France SAS',
+                'vendor_address': '16 Cours Alexandre Borodine - 26000 VALENCE',
+                'bank_name': 'ACME Pay Ltd.',
+                'iban': 'AAAA BBBB CCCC DDDD EEEE',
+                'bic_swift': 'FRXXXXX'
+            },
+            'reference': user_purchase.get('reference'),
+            'price_eur': user_purchase.get('total_price_eur')
+        }
+        return make_response(jsonify(json_data), http_code)
+
+    @app.route('/api/v1/user/purchase/order', methods=['GET'])
+    @jwt_required()
+    @user_required
+    def get_purchase():
+        """
+        Get purchase history
+        :return:
+        """
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_purchase = UserPurchase()
+        filter_purchase = Filter()
+        filter_purchase.add('user_uuid', user_uuid)
+        purchase_list = user_purchase.list(fields=['user_purchase_uuid', 'nb_token', 'total_price_eur', 'reference',
+                                                   'amount_received', 'payment_date', 'tx_hash', 'created_date'],
+                                           filter_object=filter_purchase, order='created_date', asc='DESC')
+        json_data = {
+            'status': True,
+            'message': "success_purchase",
+            'purchase': purchase_list
         }
         return make_response(jsonify(json_data), 200)
