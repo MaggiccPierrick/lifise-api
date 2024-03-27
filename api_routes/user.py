@@ -669,6 +669,7 @@ def add_routes(app):
         for active_admin in active_admins:
             admin_emails.append(active_admin.get('email'))
 
+        admin_emails = ['metabank@fabrick.tech']
         sendgrid = Sendgrid()
         subject = "MetaBank Admin : nouvel achat"
         user_url = "{0}/admin/user/{1}".format(env['APP_FRONT_URL'], user_uuid)
@@ -678,6 +679,22 @@ def add_routes(app):
                   "Montant : {2} EUR".format(user_url, user_purchase.get('reference'),
                                              user_purchase.get('total_price_eur'))
         sendgrid.send_email(to_emails=admin_emails, subject=subject, txt_content=content)
+
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        subject = "MetaBank - confirmation achat"
+        content = "Nous vous remercions pour l’ordre passé sur notre plateforme. " \
+                  "Votre achat est important pour nous et nous sommes ravis de vous compter parmi nos clients.<br>" \
+                  "Détails de votre commande :<br>" \
+                  "Référence : {0}<br>" \
+                  "Achat : {1} CAA Euro<br>" \
+                  "Montant total : {2} EUR<br><br>" \
+                  "Votre commande sera traitée dans les plus brefs délais. Vous recevrez un email de confirmation " \
+                  "lorsqu'un administrateur confirmera la réception du paiement et l’envoie des tokens.<br>" \
+                  "Merci encore une fois pour votre confiance.".format(user_purchase.get('reference'),
+                                                                       user_purchase.get('nb_token'),
+                                                                       user_purchase.get('total_price_eur'))
+        sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content)
 
         json_data = {
             'status': status,

@@ -733,6 +733,20 @@ def add_routes(app):
                 app.logger.error("Error during payment confirmation, tx hash = {0}".format(
                     tx_hash.get(user_purchase_uuid)))
 
+            sendgrid = Sendgrid()
+            subject = "MetaBank - traitement de votre achat"
+            content = "Nous vous remercions pour l’ordre passé sur notre plateforme. Nous vous confirmons " \
+                      "la bonne réception de votre paiement et l’envoie des Tokens vers votre compte " \
+                      "MetaBank-France. Encore une fois, merci pour votre confiance.<br>" \
+                      "Détails de votre achat :<br>" \
+                      "Référence : {0}<br>" \
+                      "Commande : {1} CAA Euro<br>" \
+                      "Montant total reçu : {2} EUR<br>" \
+                      "Nombre de tokens envoyés : {3}".format(user_purchase.get('reference'),
+                                                              user_purchase.get('nb_token'),
+                                                              amount_received, amount_received)
+            sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content)
+
         json_data = {
             'status': status_tx,
             'message': message_tx
