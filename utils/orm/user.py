@@ -4,6 +4,8 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 from os import environ as env
 from random import randrange
+from random import choice
+from string import ascii_letters
 
 from utils.orm.abstract import Abstract
 from utils.orm.filter import Filter
@@ -521,3 +523,54 @@ class TokenClaim(Abstract):
                 nb_token=transactions[claim_uuid].get('nb_token'), tx_hash=operation_hash)
             transactions[claim_uuid]['tx_hash'] = operation_hash
         return True, 200, "success_operation", transactions
+
+
+class UserPurchase(Abstract):
+    """
+    UserPurchase class extends the base class <abstract> and provides object-like access to the user_purchase DB table.
+    """
+    def __init__(self, data=None, adapter=None):
+        Abstract.__init__(self, data, adapter)
+        self._table = 'user_purchase'
+        self._columns = ['user_purchase_uuid', 'user_uuid', 'nb_token', 'total_price_eur', 'reference',
+                         'amount_received', 'payment_date', 'tx_hash', 'created_date']
+        self._primary_key = ['user_purchase_uuid']
+        self._defaults = {
+            'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        }
+
+    def add_order(self, user_uuid: str, nb_token: float):
+        """
+        Save an order from a user
+        :param user_uuid:
+        :param nb_token:
+        :return:
+        """
+        if nb_token <= 0:
+            return False, 400, "error_amount"
+
+        self.set_data({
+            'user_purchase_uuid': str(uuid4()),
+            'user_uuid': user_uuid,
+            'nb_token': nb_token,
+            'total_price_eur': nb_token,
+            'reference': ''.join(choice(ascii_letters) for i in range(12))
+        })
+        self.insert()
+        return True, 200, "success_saved"
+
+    def confirm_payment(self, amount_received: float, tx_hash: str):
+        """
+        Confirm a payment
+        :param amount_received:
+        :param tx_hash:
+        :return:
+        """
+        if self.get('user_purchase_uuid') is None:
+            return False, 400, "error_unknown_order"
+
+        self.set('amount_received', amount_received)
+        self.set('tx_hash', tx_hash)
+        self.set('payment_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
+        return True, 200, "success_saved"
