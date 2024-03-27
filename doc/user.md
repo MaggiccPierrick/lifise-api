@@ -607,3 +607,24 @@ RESPONSE
     "status": true
 }
 ```
+
+### Init KYC session
+_Authorized user: User_  
+Init the KYC session for the user.  
+
+URI
+```
+GET /api/v1/user/kyc/session
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "kyc_session_id": "e7d34253-6865-484c-a702-8e2611d5789d",
+    "message": "success_kyc_session",
+    "status": true
+}
+```

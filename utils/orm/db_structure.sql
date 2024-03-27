@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS `user_account` (
     `otp_expiration` CHAR(30) DEFAULT NULL,
     `public_address` TEXT DEFAULT NULL,
     `magiclink_issuer` CHAR(60) UNIQUE DEFAULT NULL,
+    `kyc_session_id` CHAR(36) UNIQUE DEFAULT NULL,
     `last_login` CHAR(30) DEFAULT NULL,
     `creator_id` CHAR(36) DEFAULT NULL,
     `created_date` CHAR(30) NOT NULL,

@@ -36,8 +36,9 @@ class UserAccount(Abstract):
         Abstract.__init__(self, data, adapter)
         self._table = 'user_account'
         self._columns = ['user_uuid', 'firstname', 'lastname', 'birthdate', 'email', 'email_hash', 'email_validated',
-                         'selfie', 'otp_token', 'otp_expiration', 'public_address', 'magiclink_issuer', 'last_login',
-                         'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
+                         'selfie', 'otp_token', 'otp_expiration', 'public_address', 'magiclink_issuer',
+                         'kyc_session_id',
+                         'last_login', 'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
         self._encrypt_fields = ['email', 'firstname', 'lastname', 'birthdate', 'otp_token', 'public_address']
         self._primary_key = ['user_uuid']
         self._defaults = {
