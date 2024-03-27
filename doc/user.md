@@ -18,6 +18,8 @@
 [Get Beneficiaries](#get-beneficiaries)  
 [Claim Tokens](#claim-tokens)  
 [Assistance Message](#assistance-message)  
+[Create Order](#create-order)  
+[Get Orders](#get-orders)  
 
 ## Endpoints description
 ### Register
@@ -525,6 +527,83 @@ RESPONSE
 ```
 {
     "message": "success_sent",
+    "status": true
+}
+```
+
+### Create order
+_Authorized user: User_  
+Create an order to purchase CAA tokens.  
+
+URI
+```
+POST /api/v1/user/purchase/order
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON  
+```
+{
+    "nb_tokens": 100
+}
+```
+RESPONSE
+```
+{
+    "bank_account": {
+        "bank_name": "ACME Pay Ltd.",
+        "bic_swift": "FRXXXXX",
+        "iban": "AAAA BBBB CCCC DDDD EEEE",
+        "vendor_address": "16 Cours Alexandre Borodine - 26000 VALENCE",
+        "vendor_name": "MetaBank France SAS"
+    },
+    "message": "success_saved",
+    "price_eur": 100,
+    "reference": "xlfZXJMLigBJ",
+    "status": true
+}
+```
+
+### Get orders
+_Authorized user: User_  
+Get orders history of the user.  
+
+URI
+```
+GET /api/v1/user/purchase/order
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "message": "success_purchase",
+    "orders": [
+        {
+            "created_date": "2024-03-25T15:01:26.318156Z",
+            "nb_token": 400.0,
+            "payment_date": null,
+            "amount_received": null,
+            "reference": "xlfZXJMLigBJ",
+            "total_price_eur": 400.0,
+            "tx_hash": null,
+            "user_purchase_uuid": "d37b7356-c980-4c23-b77b-abc28ad60425"
+        },
+        {
+            "created_date": "2024-03-25T15:00:44.418891Z",
+            "nb_token": 150.0,
+            "payment_date": null,
+            "amount_received": null,
+            "reference": "SJICTeDEhLpR",
+            "total_price_eur": 150.0,
+            "tx_hash": null,
+            "user_purchase_uuid": "31149e74-9b88-4322-90d5-10a8f993edc8"
+        }
+    ],
     "status": true
 }
 ```

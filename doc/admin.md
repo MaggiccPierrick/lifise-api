@@ -19,6 +19,8 @@
 [Deactivate User Account](#deactivate-user-account)  
 [Reactivate User Account](#reactivate-user-account)  
 [Get Wallet Balance](#get-platform-wallet-balance)  
+[Get User Orders](#get-user-orders)  
+[Confirm Payment Received](#confirm-user-payment)  
 
 ## Endpoints description
 ### Login 2FA
@@ -619,6 +621,66 @@ RESPONSE
         }
     },
     "message": "success_wallet_balance",
+    "status": true
+}
+```
+
+### Get user orders
+_Authorized user: Admin_  
+Return MATIC and CAA balances of the platform wallet.  
+
+URI
+```
+GET /api/v1/admin/user/purchase/order/<user_uuid>
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "message": "success_purchase",
+    "orders": [
+        {
+            "amount_received": 200.0,
+            "created_date": "2024-03-25T15:59:16.261621Z",
+            "nb_token": 400.0,
+            "payment_date": "2024-03-25T16:45:36.098648Z",
+            "reference": "xjsCSGmTpZPb",
+            "total_price_eur": 400.0,
+            "tx_hash": "0x647ea3f80e67c352713cedb52589cc64618aad3e292de94ba1a4637cfeb7d2aa",
+            "user_purchase_uuid": "74e761cc-7583-4ed9-ae77-f7468d525689"
+        }
+    ],
+    "status": true
+}
+```
+
+### Confirm user payment
+_Authorized user: Admin_  
+Reactivate a user account.  
+
+URI
+```
+POST /api/v1/admin/user/purchase/order/confirm
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+JSON
+```
+{
+    "user_uuid": "2afa5a02-8b57-403d-8268-cfacbdf9faba",
+    "user_purchase_uuid": "74e761cc-7583-4ed9-ae77-f7468d525689",
+    "amount_received": 200
+}
+```
+RESPONSE
+```
+{
+    "message": "success_operation",
     "status": true
 }
 ```
