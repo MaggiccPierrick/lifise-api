@@ -13,6 +13,7 @@ from utils.polygon import Polygon
 from utils.orm.blockchain import TokenOperation
 from utils.orm.filter import Filter
 from utils.orm.admin import AdminAccount
+from utils.kyc import Synaps
 
 
 def add_routes(app):
@@ -730,5 +731,58 @@ def add_routes(app):
             'status': True,
             'message': "success_purchase",
             'orders': purchase_list
+        }
+        return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/user/kyc/session', methods=['GET'])
+    @jwt_required()
+    @user_required
+    def init_kyc():
+        """
+        Init the kyc procedure on Synaps
+        :return:
+        """
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+        if user_account.get('kyc_session_id') is None:
+            synaps = Synaps()
+            status, http_code, message, session_id = synaps.init_session()
+            if status is False or session_id is None:
+                json_data = {
+                    'status': status,
+                    'message': message
+                }
+                return make_response(jsonify(json_data), http_code)
+            user_account.set('kyc_session_id', session_id)
+            user_account.update()
+
+        json_data = {
+            'status': True,
+            'message': "success_kyc_session",
+            'kyc_session_id': user_account.get('kyc_session_id')
+        }
+        return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/user/kyc/session/details', methods=['GET'])
+    @jwt_required()
+    @user_required
+    def kyc_details():
+        """
+        Get current KYC details
+        :return:
+        """
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+
+        status, http_code, message = user_account.kyc_status()
+
+        json_data = {
+            'status': status,
+            'message': message,
+            'kyc_session_id': user_account.get('kyc_session_id'),
+            'kyc_status': user_account.get('kyc_status'),
+            'kyc_status_date': user_account.get('kyc_status_date')
         }
         return make_response(jsonify(json_data), 200)
