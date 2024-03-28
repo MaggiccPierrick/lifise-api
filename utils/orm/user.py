@@ -14,6 +14,7 @@ from utils.email import check_email_format
 from utils.scaleway import ObjectStorage
 from utils.polygon import Polygon
 from utils.orm.blockchain import TokenOperation
+from utils.kyc import Synaps
 
 
 def user_directory(file_type, file_name):
@@ -37,7 +38,7 @@ class UserAccount(Abstract):
         self._table = 'user_account'
         self._columns = ['user_uuid', 'firstname', 'lastname', 'birthdate', 'email', 'email_hash', 'email_validated',
                          'selfie', 'otp_token', 'otp_expiration', 'public_address', 'magiclink_issuer',
-                         'kyc_session_id',
+                         'kyc_session_id', 'kyc_status', 'kyc_status_date',
                          'last_login', 'creator_id', 'created_date', 'updated_date', 'deactivated', 'deactivated_date']
         self._encrypt_fields = ['email', 'firstname', 'lastname', 'birthdate', 'otp_token', 'public_address']
         self._primary_key = ['user_uuid']
@@ -306,6 +307,31 @@ class UserAccount(Abstract):
             return False, 200, "success_no_user"
 
         return True, 200, "success_user_found"
+
+    def kyc_status(self):
+        """
+        Retrieve and update KYC status if necessary
+        :return:
+        """
+        if self.get('kyc_session_id') is None:
+            return False, 403, "error_kyc_not_init"
+
+        synaps = Synaps()
+        if self.get('kyc_status') == synaps.APPROVED:
+            print("APPROVED")
+            return True, 200, "success_kyc_status"
+
+        status, http_code, message, session_info = synaps.get_details(session_id=self.get('kyc_session_id'))
+        if status is False:
+            return False, 503, "error_kyc"
+
+        if session_info.get('status') != self.get('kyc_status'):
+            print(session_info.get('status'))
+            self.set('kyc_status', session_info.get('status'))
+            self.set('kyc_status_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+            self.update()
+
+        return True, 200, "success_kyc_status"
 
 
 class Beneficiary(Abstract):

@@ -21,6 +21,13 @@ class Synaps:
             'Api-Key': self.api_key
         }
 
+        self.APPROVED = 'APPROVED'
+        self.REJECTED = 'REJECTED'
+        self.RESUBMISSION = 'RESUBMISSION_REQUIRED'
+        self.SUBMISSION = 'SUBMISSION_REQUIRED'
+        self.PENDING = 'PENDING_VERIFICATION'
+        self.STATUS = [self.APPROVED, self.REJECTED, self.RESUBMISSION, self.SUBMISSION, self.PENDING]
+
     def _http_request(self, method="GET", uri=None, parameters=None):
         """
         Generic http request
@@ -77,3 +84,17 @@ class Synaps:
             session_id = response.get('session_id')
 
         return True, 200, "success_kyc_init", session_id
+
+    def get_details(self, session_id: str):
+        """
+        Get KYC details
+        :return:
+        """
+        uri = 'individual/session/{id}'.format(id=session_id)
+
+        response, http_code = self._http_request(method='GET', uri=uri)
+        if response is False:
+            return response, http_code, "error_kyc_details", None
+
+        session_info = response.get('session')
+        return True, 200, "success_kyc_details", session_info

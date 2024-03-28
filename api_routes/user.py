@@ -763,3 +763,26 @@ def add_routes(app):
             'kyc_session_id': user_account.get('kyc_session_id')
         }
         return make_response(jsonify(json_data), 200)
+
+    @app.route('/api/v1/user/kyc/session/details', methods=['GET'])
+    @jwt_required()
+    @user_required
+    def kyc_details():
+        """
+        Get current KYC details
+        :return:
+        """
+        user_uuid = get_jwt_identity().get('user_uuid')
+        user_account = UserAccount()
+        user_account.load({'user_uuid': user_uuid})
+
+        status, http_code, message = user_account.kyc_status()
+
+        json_data = {
+            'status': status,
+            'message': message,
+            'kyc_session_id': user_account.get('kyc_session_id'),
+            'kyc_status': user_account.get('kyc_status'),
+            'kyc_status_date': user_account.get('kyc_status_date')
+        }
+        return make_response(jsonify(json_data), 200)
