@@ -20,6 +20,8 @@
 [Assistance Message](#assistance-message)  
 [Create Order](#create-order)  
 [Get Orders](#get-orders)  
+[Init KYC](#init-kyc-session)  
+[Get KYC Status](#get-kyc-details)  
 
 ## Endpoints description
 ### Register
@@ -604,6 +606,50 @@ RESPONSE
             "user_purchase_uuid": "31149e74-9b88-4322-90d5-10a8f993edc8"
         }
     ],
+    "status": true
+}
+```
+
+### Init KYC session
+_Authorized user: User_  
+Init the KYC session for the user.  
+
+URI
+```
+GET /api/v1/user/kyc/session
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "kyc_session_id": "e7d34253-6865-484c-a702-8e2611d5789d",
+    "message": "success_kyc_session",
+    "status": true
+}
+```
+
+### Get KYC details
+_Authorized user: User_  
+Get the KYC details and current status.  
+
+URI
+```
+GET /api/v1/user/kyc/session/details
+```
+HEADER
+```
+X-AUTH-USER: "JWT_token"
+```
+RESPONSE
+```
+{
+    "kyc_session_id": "e7d34253-6865-484c-a702-8e2611d5789d",
+    "kyc_status": "SUBMISSION_REQUIRED",
+    "kyc_status_date": "2024-03-27T17:09:12.064829Z",
+    "message": "success_kyc_status",
     "status": true
 }
 ```
