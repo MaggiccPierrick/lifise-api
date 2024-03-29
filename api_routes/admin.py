@@ -672,19 +672,33 @@ def add_routes(app):
         }
         return make_response(jsonify(json_data), http_code)
 
+    @app.route('/api/v1/admin/user/purchase/order', methods=['GET'])
     @app.route('/api/v1/admin/user/purchase/order/<user_uuid>', methods=['GET'])
     @jwt_required()
     @admin_required
-    def admin_get_user_orders(user_uuid):
+    def admin_get_user_orders(user_uuid=None):
         """
         Get user orders
         :return:
         """
+        pending = None
+        if request.args.get('pending') == 'false':
+            pending = False
+        if request.args.get('pending') == 'true':
+            pending = True
+
         user_purchase = UserPurchase()
         filter_purchase = Filter()
-        filter_purchase.add('user_uuid', user_uuid)
-        purchase_list = user_purchase.list(fields=['user_purchase_uuid', 'nb_token', 'total_price_eur', 'reference',
-                                                   'amount_received', 'payment_date', 'tx_hash', 'created_date'],
+        if user_uuid is not None:
+            filter_purchase.add('user_uuid', user_uuid)
+        if pending is not None:
+            if pending is True:
+                filter_purchase.add('amount_received', operator=OperatorType.IN)
+            else:
+                filter_purchase.add('amount_received', operator=OperatorType.INN)
+        purchase_list = user_purchase.list(fields=['user_purchase_uuid', 'user_uuid', 'nb_token', 'total_price_eur',
+                                                   'reference', 'amount_received', 'payment_date', 'tx_hash',
+                                                   'created_date'],
                                            filter_object=filter_purchase, order='created_date', asc='DESC')
         json_data = {
             'status': True,

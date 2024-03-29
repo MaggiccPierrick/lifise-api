@@ -640,9 +640,11 @@ RESPONSE
 _Authorized user: Admin_  
 Return MATIC and CAA balances of the platform wallet.  
 
-URI
+URI  
+_pending arg is optional to return only pending or confirmed purchases. Returns all if not given._
 ```
-GET /api/v1/admin/user/purchase/order/<user_uuid>
+GET /api/v1/admin/user/purchase/order?pending=true
+GET /api/v1/admin/user/purchase/order/<user_uuid>?pending=true
 ```
 HEADER
 ```
@@ -661,7 +663,8 @@ RESPONSE
             "reference": "xjsCSGmTpZPb",
             "total_price_eur": 400.0,
             "tx_hash": "0x647ea3f80e67c352713cedb52589cc64618aad3e292de94ba1a4637cfeb7d2aa",
-            "user_purchase_uuid": "74e761cc-7583-4ed9-ae77-f7468d525689"
+            "user_purchase_uuid": "74e761cc-7583-4ed9-ae77-f7468d525689",
+            "user_uuid": "2afa5a02-8b57-403d-8268-cfacbdf9faba"
         }
     ],
     "status": true
