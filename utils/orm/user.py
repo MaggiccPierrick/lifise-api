@@ -318,7 +318,6 @@ class UserAccount(Abstract):
 
         synaps = Synaps()
         if self.get('kyc_status') == synaps.APPROVED:
-            print("APPROVED")
             return True, 200, "success_kyc_status"
 
         status, http_code, message, session_info = synaps.get_details(session_id=self.get('kyc_session_id'))
@@ -326,7 +325,6 @@ class UserAccount(Abstract):
             return False, 503, "error_kyc"
 
         if session_info.get('status') != self.get('kyc_status'):
-            print(session_info.get('status'))
             self.set('kyc_status', session_info.get('status'))
             self.set('kyc_status_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
             self.update()
