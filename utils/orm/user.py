@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from os import environ as env
 from random import randrange
 from random import choice
-from string import ascii_letters
+from string import ascii_uppercase
 
 from utils.orm.abstract import Abstract
 from utils.orm.filter import Filter
@@ -581,7 +581,7 @@ class UserPurchase(Abstract):
             'user_uuid': user_uuid,
             'nb_token': nb_token,
             'total_price_eur': nb_token,
-            'reference': ''.join(choice(ascii_letters) for i in range(12))
+            'reference': ''.join(choice(ascii_uppercase) for i in range(12))
         })
         self.insert()
         return True, 200, "success_saved"
