@@ -210,7 +210,9 @@ def add_routes(app):
                 'updated_date': user_account.get('updated_date'),
                 'public_address': user_account.get('public_address'),
                 'selfie': selfie,
-                'selfie_ext': selfie_ext
+                'selfie_ext': selfie_ext,
+                'kyc_status': user_account.get('kyc_status'),
+                'kyc_status_date': user_account.get('kyc_status_date')
             }
         }
         return make_response(jsonify(json_data), http_code)
@@ -330,7 +332,9 @@ def add_routes(app):
                     'updated_date': user_account.get('updated_date'),
                     'public_address': user_account.get('public_address'),
                     'selfie': selfie,
-                    'selfie_ext': selfie_ext
+                    'selfie_ext': selfie_ext,
+                    'kyc_status': user_account.get('kyc_status'),
+                    'kyc_status_date': user_account.get('kyc_status_date')
                 },
                 'wallet': balances,
                 'token_claims': {

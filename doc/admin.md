@@ -379,6 +379,13 @@ Get all user accounts.
 URI  
 _deactivated_ arg is optional. By default, the endpoint returns active accounts. Set 'deactivated=true' to get deactivated accounts.  
 _pending_ arg is optional. By default, the endpoint returns completed accounts. Set 'pending=true' to get unconfirmed accounts.  
+
+KYC status:  
+- SUBMISSION_REQUIRED
+- RESUBMISSION_REQUIRED
+- PENDING_VERIFICATION
+- APPROVED
+- REJECTED
 ```
 GET /api/v1/admin/users?deactivated=false&pending=false     # Return only main information of all the users
 GET /api/v1/admin/users/<user_uuid>                         # Get all details of the user
@@ -401,6 +408,8 @@ RESPONSE (ALL USERS)
             "email_address": "john@doe.com",
             "email_validated": false,
             "firstname": "John",
+            "kyc_status": "SUBMISSION_REQUIRED",
+            "kyc_status_date": "2024-03-10T14:19:52.570413Z",
             "last_login_date": "2024-01-10T14:19:52.570413Z",
             "lastname": "Doe",
             "public_address": "Ox...,
@@ -427,6 +436,8 @@ RESPONSE (USER DETAILS)
         "email_address": "john@doe.com",
         "email_validated": true,
         "firstname": "John",
+        "kyc_status": "SUBMISSION_REQUIRED",
+        "kyc_status_date": "2024-03-10T14:19:52.570413Z",
         "last_login_date": "2024-02-14T15:48:03.158734Z",
         "lastname": "Doe",
         "public_address": "0x...",

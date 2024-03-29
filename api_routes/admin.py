@@ -522,7 +522,9 @@ def add_routes(app):
                     'token_claims': {
                         'to_claim': to_claim,
                         'total_to_claim': total_to_claim
-                    }
+                    },
+                    'kyc_status': current_user.get('kyc_status'),
+                    'kyc_status_date': current_user.get('kyc_status_date')
                 })
 
             json_data = {
@@ -569,6 +571,8 @@ def add_routes(app):
                     'total_claimed': total_claimed
                 },
                 'wallet': balances,
+                'kyc_status': user_account.get('kyc_status'),
+                'kyc_status_date': user_account.get('kyc_status_date')
             }
             json_data = {
                 'status': True,
