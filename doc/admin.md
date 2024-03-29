@@ -656,18 +656,27 @@ RESPONSE
     "message": "success_purchase",
     "orders": [
         {
-            "amount_received": 200.0,
-            "created_date": "2024-03-25T15:59:16.261621Z",
-            "nb_token": 400.0,
-            "payment_date": "2024-03-25T16:45:36.098648Z",
-            "reference": "xjsCSGmTpZPb",
-            "total_price_eur": 400.0,
-            "tx_hash": "0x647ea3f80e67c352713cedb52589cc64618aad3e292de94ba1a4637cfeb7d2aa",
-            "user_purchase_uuid": "74e761cc-7583-4ed9-ae77-f7468d525689",
+            "amount_received": null,
+            "created_date": "2024-03-29T10:20:14.364335Z",
+            "nb_token": 120.0,
+            "payment_date": null,
+            "reference": "MPXCWQIYIZUC",
+            "total_price_eur": 120.0,
+            "tx_hash": null,
+            "user_purchase_uuid": "3ee64d7e-a42a-480d-a89e-e8a87a9ff626",
             "user_uuid": "2afa5a02-8b57-403d-8268-cfacbdf9faba"
         }
     ],
-    "status": true
+    "status": true,
+    "user_info": {
+        "2afa5a02-8b57-403d-8268-cfacbdf9faba": {
+            "email": "john@doe.com",
+            "firstname": "John",
+            "kyc_status": "APPROVED",
+            "lastname": "DOE",
+            "public_address": "0x78E178Fe25c8F8347aF84315F2Ff618b55Db0aA7"
+        }
+    }
 }
 ```
 
