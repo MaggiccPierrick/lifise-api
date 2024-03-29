@@ -637,7 +637,7 @@ Get the KYC details and current status.
 
 URI
 ```
-GET /api/v1/user/kyc/session/details
+GET /api/v1/user/kyc/details
 ```
 HEADER
 ```

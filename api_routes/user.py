@@ -649,6 +649,11 @@ def add_routes(app):
                 return http_error_400(message='Bad request, {0} is missing'.format(mandatory_key))
         nb_tokens = request.json.get('nb_tokens')
 
+        try:
+            nb_tokens = int(nb_tokens)
+        except ValueError:
+            return http_error_400(message='error_amount')
+
         if nb_tokens < int(env['APP_MIN_BUY']):
             return http_error_400(message='error_not_enough')
 
@@ -670,7 +675,6 @@ def add_routes(app):
         for active_admin in active_admins:
             admin_emails.append(active_admin.get('email'))
 
-        admin_emails = ['metabank@fabrick.tech']
         sendgrid = Sendgrid()
         subject = "MetaBank Admin : nouvel achat"
         user_url = "{0}/admin/user/{1}".format(env['APP_FRONT_URL'], user_uuid)
@@ -764,7 +768,7 @@ def add_routes(app):
         }
         return make_response(jsonify(json_data), 200)
 
-    @app.route('/api/v1/user/kyc/session/details', methods=['GET'])
+    @app.route('/api/v1/user/kyc/details', methods=['GET'])
     @jwt_required()
     @user_required
     def kyc_details():
