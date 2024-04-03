@@ -163,6 +163,7 @@ class UserAccount(Abstract):
         :param email_address:
         :return:
         """
+        email_address = email_address.lower()
         email_address_hash, email_salt = generate_hash(data_to_hash=email_address, salt=env['APP_DB_HASH_SALT'])
         filter_user = Filter()
         filter_user.add('email_hash', email_address_hash)
@@ -293,6 +294,7 @@ class UserAccount(Abstract):
         :param public_address:
         :return:
         """
+        email_address = email_address.lower()
         if email_address is not None:
             if check_email_format(email_address) is False:
                 return False, 400, "error_email"
