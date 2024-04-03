@@ -464,8 +464,13 @@ def add_routes(app):
         token = request.json.get('2fa_token')
 
         user_uuid = get_jwt_identity().get('user_uuid')
+        if beneficiary_user_uuid is not None and user_uuid == beneficiary_user_uuid:
+            return http_error_400(message="error_own_address")
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
+
+        if public_address is not None and public_address == user_account.get('public_address'):
+            return http_error_400(message="error_own_address")
 
         sendgrid = Sendgrid()
         if token is None:
