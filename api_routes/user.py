@@ -4,7 +4,7 @@ from os import environ as env
 from datetime import datetime, timedelta
 
 from utils.orm.user import UserAccount, Beneficiary, TokenClaim, UserPurchase
-from utils.api import http_error_400, http_error_401, json_data_required, user_required
+from utils.api import http_error_400, http_error_401, http_error_403, json_data_required, user_required
 from utils.email import Sendgrid
 from utils.redis_db import Redis
 from utils.magic_link import MagicLink
@@ -273,7 +273,7 @@ def add_routes(app):
     @app.route('/api/v1/user/account', methods=['POST'])
     @json_data_required
     @jwt_required()
-    @user_required
+    @user_required()
     def update_user_account():
         """
         Update personal account information of the user
@@ -301,7 +301,7 @@ def add_routes(app):
     @app.route('/api/v1/user/account', methods=['GET'])
     @app.route('/api/v1/user/account/<user_uuid>', methods=['GET'])
     @jwt_required()
-    @user_required
+    @user_required()
     def get_user_account(user_uuid=None):
         """
         Return personal account information or public profile of the given user uuid
@@ -365,7 +365,7 @@ def add_routes(app):
 
     @app.route('/api/v1/user/operations', methods=['GET'])
     @jwt_required()
-    @user_required
+    @user_required()
     def get_user_operations():
         """
         Return user CAA operations
@@ -412,7 +412,7 @@ def add_routes(app):
     @app.route('/api/v1/user/search', methods=['POST'])
     @json_data_required
     @jwt_required()
-    @user_required
+    @user_required()
     def search_user():
         """
         Search a user by email or public address
@@ -452,7 +452,7 @@ def add_routes(app):
     @app.route('/api/v1/user/beneficiary', methods=['POST'])
     @json_data_required
     @jwt_required()
-    @user_required
+    @user_required()
     def add_beneficiary():
         """
         Add a beneficiary to the user account
@@ -521,7 +521,7 @@ def add_routes(app):
 
     @app.route('/api/v1/user/beneficiary', methods=['GET'])
     @jwt_required()
-    @user_required
+    @user_required()
     def get_beneficiaries():
         """
         Get the beneficiaries of the connected user
@@ -541,7 +541,7 @@ def add_routes(app):
     @app.route('/api/v1/user/beneficiary/remove', methods=['POST'])
     @json_data_required
     @jwt_required()
-    @user_required
+    @user_required()
     def remove_beneficiary():
         """
         Remove a beneficiary from user list
@@ -566,7 +566,7 @@ def add_routes(app):
     @app.route('/api/v1/user/claim', methods=['POST'])
     @json_data_required
     @jwt_required()
-    @user_required
+    @user_required(kyc=True)
     def claim_caa():
         """
         Claim tokens
@@ -597,7 +597,7 @@ def add_routes(app):
     @app.route('/api/v1/user/assistance', methods=['POST'])
     @json_data_required
     @jwt_required()
-    @user_required
+    @user_required()
     def user_assistance():
         """
         Send message to admin for assistance
@@ -646,7 +646,7 @@ def add_routes(app):
     @app.route('/api/v1/user/purchase/order', methods=['POST'])
     @json_data_required
     @jwt_required()
-    @user_required
+    @user_required(kyc=True)
     def order_purchase():
         """
         Create an order to purchase token
@@ -727,7 +727,7 @@ def add_routes(app):
 
     @app.route('/api/v1/user/purchase/order', methods=['GET'])
     @jwt_required()
-    @user_required
+    @user_required()
     def get_purchase():
         """
         Get purchase history
@@ -749,7 +749,7 @@ def add_routes(app):
 
     @app.route('/api/v1/user/kyc/session', methods=['GET'])
     @jwt_required()
-    @user_required
+    @user_required()
     def init_kyc():
         """
         Init the kyc procedure on Synaps
@@ -779,7 +779,7 @@ def add_routes(app):
 
     @app.route('/api/v1/user/kyc/details', methods=['GET'])
     @jwt_required()
-    @user_required
+    @user_required()
     def kyc_details():
         """
         Get current KYC details
