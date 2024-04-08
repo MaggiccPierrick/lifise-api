@@ -467,7 +467,7 @@ RESPONSE
 ```
 
 ### Claim tokens
-_Authorized user: User_  
+_Authorized user: User with KYC_  
 Send a list of claim uuid to send tokens to the user.  
 
 URI
@@ -538,7 +538,7 @@ RESPONSE
 ```
 
 ### Create order
-_Authorized user: User_  
+_Authorized user: User with KYC_  
 Create an order to purchase CAA tokens.  
 
 URI
