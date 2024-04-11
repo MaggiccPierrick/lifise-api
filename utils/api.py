@@ -61,11 +61,11 @@ def admin_required(func):
             admin = AdminAccount()
             if admin.is_admin(user_uuid=admin_uuid):
                 return func(*args, **kwargs)
-        return http_error_403()
+        return http_error_401()
     return decorated_function
 
 
-def user_required(kyc=None):
+def user_required(kyc=False):
     """
     Decorator around endpoints that require requester to be a registered user to access the resource.
     :param kyc: set True if KYC is mandatory.
@@ -81,11 +81,11 @@ def user_required(kyc=None):
                 user_account = UserAccount()
                 user_account.load({'user_uuid': user_uuid, 'deactivated': 0})
                 if user_account.get('user_uuid') is not None:
-                    if kyc is not None and kyc is True:
+                    if kyc is True:
                         synaps = Synaps()
                         if user_account.get('kyc_status') != synaps.APPROVED:
                             return http_error_403(message="error_kyc")
                     return func(*args, **kwargs)
-            return http_error_403()
+            return http_error_401()
         return decorated_function
     return decorator

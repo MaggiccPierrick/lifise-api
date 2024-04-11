@@ -752,12 +752,12 @@ def add_routes(app):
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
         if user_account.get('public_address') is None:
-            return http_error_403(message="error_public_address")
+            return http_error_400(message="error_public_address")
 
         user_purchase = UserPurchase()
         user_purchase.load({'user_uuid': user_uuid, 'user_purchase_uuid': user_purchase_uuid})
         if user_purchase.get('amount_received') is not None:
-            return http_error_403(message="error_already_confirmed")
+            return http_error_400(message="error_already_confirmed")
 
         transaction = {
             user_purchase_uuid: {
