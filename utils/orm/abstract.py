@@ -93,6 +93,8 @@ class Abstract(object):
                 if column in self._encrypt_fields:
                     if result[column] is not None:
                         self.set(column, self.fernet.decrypt(result[column].encode()).decode())
+                    else:
+                        self.set(column, None)
                 else:
                     self.set(column, result[column])
 
