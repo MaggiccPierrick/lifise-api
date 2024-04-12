@@ -79,8 +79,8 @@ class Polygon:
             self.network = Network.MATIC_MAINNET
             self.chain_id = 137
         else:
-            self.network = Network.MATIC_MUMBAI
-            self.chain_id = 80001
+            self.network = Network.MATIC_AMOY
+            self.chain_id = int(env['POLYGON_CHAIN_ID'])
 
         self.alchemy = Alchemy(self.alchemy_api_key, self.network, max_retries=self.max_retries)
         self.default_gas = int(env['POLYGON_GAS'])
