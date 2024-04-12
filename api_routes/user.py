@@ -194,6 +194,24 @@ def add_routes(app):
                         'created_at': current_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")}
         jwt_token = create_access_token(identity=jwt_identity)
         refresh_token = create_refresh_token(identity=jwt_identity)
+
+        polygon = Polygon()
+        balances = {}
+        if user_account.get('public_address') is not None:
+            balances = polygon.get_balance(address=user_account.get('public_address'))
+
+        if env['APP_ENVIRONMENT'] == 'sandbox':
+            if balances.get('matic') is not None and balances.get('matic') < 0.003:
+                status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
+                                                        nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+                token_operation = TokenOperation()
+                status_op, http_code_op, message_op = token_operation.add_operation(
+                    receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
+                    receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
+                    nb_token=float(env['POLYGON_MATIC_NEW_USER']), tx_hash=tx_hash)
+                if status_op is False:
+                    app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
+
         json_data = {
             'status': status,
             'message': message,
@@ -213,7 +231,8 @@ def add_routes(app):
                 'selfie_ext': selfie_ext,
                 'kyc_status': user_account.get('kyc_status'),
                 'kyc_status_date': user_account.get('kyc_status_date')
-            }
+            },
+            'wallet': balances
         }
         return make_response(jsonify(json_data), http_code)
 
