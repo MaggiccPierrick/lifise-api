@@ -130,7 +130,18 @@ RESPONSE
     "message": "success_login",
     "refresh_token": "eyJhbGci...",
     "refresh_expiration": "2024-01-16T21:48:54.762722Z",
-    "status": true
+    "status": true,
+    "wallet": {
+        "matic": 0.35971071249755476,
+        "token_balance": 1100.0,
+        "token_metadata": {
+            "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
+            "decimals": 6,
+            "logo": null,
+            "name": "CaaEURO Stablecoin",
+            "symbol": "CaaEURO"
+        }
+    }
 }
 ```
 

@@ -12,6 +12,7 @@ from utils.api import http_error_400, http_error_401, http_error_403, json_data_
 from utils.email import Sendgrid
 from utils.security import generate_hash
 from utils.polygon import Polygon
+from utils.orm.blockchain import TokenOperation
 
 
 def add_routes(app):
@@ -773,6 +774,14 @@ def add_routes(app):
             if status is False:
                 app.logger.error("Error during payment confirmation, tx hash = {0}".format(
                     tx_hash.get(user_purchase_uuid)))
+
+            token_operation = TokenOperation()
+            status_op, http_code_op, message_op = token_operation.add_operation(
+                receiver_uuid=user_uuid, sender_address=env['POLYGON_PUBLIC_KEY'],
+                receiver_address=user_account.get('public_address'), token=token_operation.CAA,
+                nb_token=amount_received, tx_hash=tx_hash)
+            if status_op is False:
+                app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
 
             sendgrid = Sendgrid()
             subject = "MetaBank - traitement de votre achat"
