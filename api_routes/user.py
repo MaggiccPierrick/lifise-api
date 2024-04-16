@@ -733,11 +733,11 @@ def add_routes(app):
             'status': status,
             'message': message,
             'bank_account': {
-                'vendor_name': 'MetaBank France SAS',
-                'vendor_address': '16 Cours Alexandre Borodine - 26000 VALENCE',
-                'bank_name': 'ACME Pay Ltd.',
-                'iban': 'AAAA BBBB CCCC DDDD EEEE',
-                'bic_swift': 'FRXXXXX'
+                'vendor_name': env['BANK_VENDOR_NAME'],
+                'vendor_address': env['BANK_VENDOR_ADDRESS'],
+                'bank_name': env['BANK_NAME'],
+                'iban': env['BANK_IBAN'],
+                'bic_swift': env['BANK_BIC']
             },
             'reference': user_purchase.get('reference'),
             'price_eur': user_purchase.get('total_price_eur')
