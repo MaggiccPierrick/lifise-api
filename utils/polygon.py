@@ -4,7 +4,7 @@ from alchemy import Alchemy, Network, AssetTransfersCategory, exceptions
 from web3.middleware import geth_poa_middleware
 
 from utils.redis_db import Redis
-
+from utils.scaleway import SecretManager
 from utils.log import Logger
 
 '''
@@ -58,7 +58,6 @@ def unlock_nonce(address: str) -> bool:
 class Polygon:
     def __init__(self):
         self.platform_address = env['POLYGON_PUBLIC_KEY']
-        self.platform_private_key = env['POLYGON_PRIVATE_KEY']
         self.caa_contract = env['POLYGON_CAA_CONTRACT']
         self.caa_decimals = int(env['POLYGON_CAA_DECIMALS'])
         self.caa_contract_abi = [{
@@ -148,8 +147,13 @@ class Polygon:
         :param transaction:
         :return:
         """
+        secret = SecretManager()
+        secrets = secret.get_secrets(secret_id=env['POLYGON_SECRET_ID'])
+        if secrets is False or secrets.get('private_key') is None:
+            self.log.error("Failed to load private key")
+            return None
         try:
-            signed_tx = self.w3.eth.account.sign_transaction(transaction, self.platform_private_key)
+            signed_tx = self.w3.eth.account.sign_transaction(transaction, secrets.get('private_key'))
         except Exception as e:
             self.log.error("Signing transaction failed with error : {0}".format(e))
             return None
@@ -192,6 +196,8 @@ class Polygon:
         """
         transaction = self._build_erc20_tx(receiver_address=receiver_address, nb_token=nb_token, nonce=nonce)
         signed_tx = self._sign_tx(transaction=transaction)
+        if signed_tx is None:
+            return False, None
         try:
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         except Exception as e:
