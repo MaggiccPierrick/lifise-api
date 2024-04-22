@@ -1,6 +1,10 @@
 import boto3
+import requests
+import json
 
 from os import environ as env
+from base64 import b64decode
+
 from utils.log import Logger
 
 
@@ -197,3 +201,82 @@ class ObjectStorage:
         else:
             log.warning("Something went wrong when getting objects list. Result = {0}".format(result))
             return False
+
+
+class SecretManager:
+    """
+    Class to interact with Scaleway Secret Manager API
+    """
+    def __init__(self):
+        """
+        Initialize connection and feature with Scaleway Secret Manager API
+        """
+        self.secret_key = env['SCALEWAY_SECRET_KEY']
+        self.base_url = env['SCALEWAY_SM_URL']
+        self.region = env['SCALEWAY_REGION']
+        self.timeout = int(env['SCALEWAY_TIMEOUT'])
+        self.api_url = "{base_url}{region}/secrets".format(
+            base_url=self.base_url,
+            region=self.region)
+        self.headers = {
+            'Content-Type': 'application/json',
+            'X-Auth-Token': self.secret_key
+        }
+        self.log = Logger()
+
+    def _http_request(self, method="GET", uri=None, parameters=None):
+        """
+        Generic http request
+        :param method: http request method
+        :param uri: endpoint uri
+        :param parameters: request parameters
+        :return:
+        """
+        if uri is None:
+            return False
+
+        url = self.api_url + uri
+
+        if method == "GET":
+            try:
+                if parameters is not None:
+                    result = requests.get(url, timeout=self.timeout, headers=self.headers, params=parameters)
+                else:
+                    result = requests.get(url, timeout=self.timeout, headers=self.headers)
+            except Exception as e:
+                self.log.error("HTTP request to Scaleway secrets API failed\nURL = {0}\nError = {1}".format(url, e))
+                return False, 500
+        elif method == "POST":
+            try:
+                result = requests.post(url, timeout=self.timeout, headers=self.headers, data=parameters)
+            except Exception as e:
+                self.log.error("HTTP request to Scaleway secrets API failed\nURL = {0}\nError = {1}".format(url, e))
+                return False, 500
+        else:
+            return False, 405
+
+        try:
+            if result.status_code >= 500:
+                self.log.error("Scaleway secrets API answered with http status {}".format(result.status_code))
+                return False, 500
+            else:
+                json_data = json.loads(result.content.decode())
+                return json_data, result.status_code
+        except ValueError:
+            self.log.error("Scaleway secrets API request, failed to load json")
+            return False, 500
+
+    def get_secrets(self, secret_id):
+        """
+        Load secrets from Secret Manager
+        :return:
+        """
+        uri = "/{secret_id}/versions/latest/access".format(secret_id=secret_id)
+        response, http_code = self._http_request(method='GET', uri=uri)
+        if response is False:
+            return False
+        data = b64decode(response.get('data'))
+        try:
+            return json.loads(data)
+        except json.decoder.JSONDecodeError:
+            return data
