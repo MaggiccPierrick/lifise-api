@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+redis = "*"
+pymysql = "*"
+flask-jwt-extended = "*"
+python-dotenv = "*"
+requests = "*"
+uwsgi = "*"
+boto3 = "*"
+cryptography = "*"
+flask-mail = "*"
+magic-admin = "*"
+web3 = "*"
+alchemy-sdk = "*"
+dataclass-wizard = "*"
+sendgrid = "*"
+pyotp = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
+python_full_version = "3.10.9"

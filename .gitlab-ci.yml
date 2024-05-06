@@ -1,0 +1,26 @@
+image: python:3.10.9
+
+before_script:
+  - apt-get update -y
+
+stages:
+  - deploy_sandbox
+
+deploy_sandbox:
+  stage: deploy_sandbox
+  environment:
+    name: sandbox
+    url: https://api.metabank.codinsight.app
+  before_script:
+  - apt-get update -y
+  - 'which ssh-agent || ( apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - echo "$METABANK_SANDBOX_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - echo "$METABANK_SANDBOX_SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+  - chmod 644 ~/.ssh/known_hosts
+  script:
+    - ssh $METABANK_SANDBOX_USERNAME@$METABANK_SANDBOX_URL -p $METABANK_SANDBOX_SSH_PORT 'cd /home/codinsight/metabank-api/ && eval "$(ssh-agent -s)" && ssh-add /home/codinsight/.ssh/gitlab_deploy && git checkout sandbox && git pull origin sandbox && sudo /bin/systemctl restart metabank-api.service && exit'
+  only:
+    - sandbox

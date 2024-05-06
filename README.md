@@ -1,93 +1,380 @@
-# metabank-api
+# MetaBank API
 
+The open Neo Bank powered by web3 for everyone.  
+This repository is for the backend (API) of the solution including database management, object storage and webservices.  
 
+See the following instructions to setup the MetaBank API on Ubuntu server.  
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
+## 1. Setup server (Ubuntu 22)
+#### Change ssh port
+Update ssh config file to set new port and restart ssh  
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/codinsight/metabank/metabank-api.git
-git branch -M main
-git push -uf origin main
+sudo nano /etc/ssh/sshd_config
+sudo service ssh restart
 ```
 
-## Integrate with your tools
+Configure and enable firewall
+```
+sudo ufw allow 12345  
+sudo ufw enable
+```
 
-- [ ] [Set up project integrations](https://gitlab.com/codinsight/metabank/metabank-api/-/settings/integrations)
+#### Create dedicated local user
+Create the user  
+``` adduser codinsight ```
 
-## Collaborate with your team
+Add the newly created user as a sudoer  
+``` usermod -aG sudo codinsight ```
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+Allow the user to connect the server via ssh  
+Copy / paste the authorized key from root user to codinsight user (as root)  
+```
+mkdir /home/codinsight/.ssh
+cp /root/.ssh/authorized_keys /home/codinsight/.ssh/authorized_keys
+cd /home/codinsight
+chown codinsight:codinsight .ssh
+cd .ssh
+chown codinsight:codinsight authorized_keys
+```
 
-## Test and Deploy
+Disconnect and connect with the new user.  
 
-Use the built-in continuous integration in GitLab.
+#### Create ssh keys for gitlab CI/CD
+Create gitlab deploy key without passphrase on the server in /home/codinsight/.ssh directory  
+``` ssh-keygen -t rsa -b 4096 ```
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Copy public key in gitlab here: https://gitlab.com/codinsight/metabank/metabank-api/-/settings/repository  
+in "Deploy keys" section.  
 
-***
+Create ssh key (locally on laptop) for Gitlab CI/CD, without passphrase  
+``` ssh-keygen -t rsa -b 4096 ```
 
-# Editing this README
+Copy private key in Gitlab CI/CD variables here: https://gitlab.com/codinsight/metabank/metabank-api/-/settings/ci_cd  
+in "Variables" section.  
+Copy public key in authorized_keys file on the server (/home/codinsight/.ssh/authorized_keys)
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
 
-## Suggestions for a good README
+#### Set CI/CD variables in Gitlab
+METABANK_SANDBOX_URL: url of the server  
+METABANK_SANDBOX_SSH_PORT: ssh port on the server  
+METABANK_SANDBOX_SSH_PRIVATE_KEY: private key to access the server  
+METABANK_SANDBOX_USERNAME: username of the operating system account  
+METABANK_SANDBOX_SSH_KNOWN_HOSTS: copy / paste the content of the known_hosts (on your laptop) file created when connecting the server  
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
 
-## Name
-Choose a self-explaining name for your project.
+## 2. First installation of the project
+#### Clone the repository
+Add private key to ssh agent  
+```
+eval "$(ssh-agent -s)"
+ssh-add /home/codinsight/.ssh/gitlab_deploy
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Clone the repository using ssh  
+```
+git clone git@gitlab.com:codinsight/metabank/metabank-api.git
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+#### Install OS dependencies
+```
+sudo apt install Python3.10  
+sudo apt install nginx  
+sudo apt install python3-certbot-nginx  
+sudo apt install pkg-config  
+sudo apt install automake  
+sudo apt install libtool  
+sudo apt install make  
+sudo apt install python3-pip
+sudo apt install pipenv
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+#### Install and setup Redis
+Download and install Redis
+```
+curl -s -o redis-stable.tar.gz http://download.redis.io/redis-stable.tar.gz
+sudo tar -C /usr/local/lib/ -xzf redis-stable.tar.gz
+rm redis-stable.tar.gz
+cd /usr/local/lib/redis-stable/
+sudo make
+sudo make install
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Verify Redis is in PATH and version number  
+```
+redis-cli --version
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Create needed directories (verify that the owner of the directories is the application user (codinsight))  
+```
+sudo mkdir -p /etc/redis/metabank-api/
+sudo chown codinsight:codinsight /etc/redis/metabank-api/
+sudo mkdir /var/log/redis-metabank/
+sudo chown codinsight:codinsight /var/log/redis-metabank/
+sudo nano /etc/redis/metabank-api.conf
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Copy / paste the following content in Redis config file (/etc/redis/metabank-api.conf)  
+```
+port              6379
+daemonize         no
+save              60 1
+bind              127.0.0.1 ::1
+tcp-keepalive     300
+dbfilename        metabank-api.rdb
+dir               /etc/redis/metabank-api/
+rdbcompression    yes
+supervised        systemd
+pidfile           /var/run/redis-metabank-api.pid
+loglevel          notice
+logfile           /var/log/redis-metabank/metabank-api.log
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Set Redis as a service by creating the Redis service file  
+```
+sudo nano /etc/systemd/system/redis-metabank-api.service
+```
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+And copy / paste the following content  
+```
+[Unit]
+Description=Redis In-Memory Data Store for MetaBank API
+After=network.target
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+[Service]
+User=codinsight
+Group=codinsight
+Type=notify
+ExecStart=/usr/local/bin/redis-server /etc/redis/metabank-api.conf
+ExecStop=/usr/local/bin/redis-cli shutdown
+Restart=always
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+[Install]
+WantedBy=multi-user.target
+```
 
-## License
-For open source projects, say how it is licensed.
+Allow Redis service to start at server boot as codinsight user  
+```
+systemctl enable redis-metabank-api.service
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+
+#### Setup virtual environment and install Python dependencies
+```
+pip3 install pipenv
+cd /home/codinsight/metabank-api/
+eval "$(ssh-agent -s)"
+ssh-add /home/codinsight/.ssh/gitlab_deploy
+git fetch
+git checkout sandbox
+pipenv install
+```
+
+#### Create local directories and files
+```
+nano conf/metabank-api.env              # and copy/paste and update content
+mkdir var
+mkdir var/log
+nano var/metabank-sb-db.pem             # and copy/paste database certificate
+```
+
+#### Configure Nginx
+Follow instructions here : https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uwsgi-and-nginx-on-ubuntu-22-04  
+Create api.metabank.codinsight.app config file in /etc/nginx/sites-available with the following content.  
+```
+sudo nano /etc/nginx/sites-enabled/api.metabank.codinsight.app
+```
+
+```
+server {
+    listen 80;
+    server_name api.metabank.codinsight.app www.api.api.metabank.codinsight.app;
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:/home/codinsight/metabank-api/metabank-api.sock;
+    }
+}
+```
+
+#### Add firewall rules for Nginx
+```
+sudo ufw allow 'Nginx HTTPS'  
+sudo ufw allow 'Nginx HTTP'  
+```
+
+#### uWSGI
+
+Test if uwsgi is working well  
+```
+pipenv shell
+uwsgi --socket 0.0.0.0:14000 --protocol=http -w wsgi:app
+```  
+
+Create uwsgi log directory and metabank-api.log file  
+```
+sudo mkdir /var/log/uwsgi
+sudo touch /var/log/uwsgi/metabank-api.log
+sudo chown codinsight:codinsight /var/log/uwsgi/metabank-api.log
+```
+
+#### Run MetaBank API as a service
+Create systemd service file  
+```
+sudo nano /etc/systemd/system/metabank-api.service
+```  
+
+And copy / paste the following content:  
+```
+[Unit]
+Description=uWSGI instance to serve MetaBank API
+After=network.target
+
+[Service]
+User=codinsight
+Group=codinsight
+WorkingDirectory=/home/codinsight/metabank-api
+Environment="PATH=/home/codinsight/.local/share/virtualenvs/metabank-api-oFMDqNVs/bin"
+ExecStart=/home/codinsight/.local/share/virtualenvs/metabank-api-oFMDqNVs/bin/uwsgi --ini metabank-api.ini
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Allow MetaBank API service to start at server boot as codinsight user  
+```
+systemctl enable metabank-api.service
+```
+
+#### Allow the user to restart the service as sudoer without password  
+Edit sudoer file  
+```
+sudo visudo
+```
+
+And add the following line  
+```
+codinsight ALL=(ALL) NOPASSWD: /bin/systemctl restart metabank-api.service
+```
+
+#### Add ssl certificate to Nginx
+Activate Certbot, install ssl certificate and configure Nginx for the given domain  
+```
+sudo certbot --nginx -d api.metabank.codinsight.app -d www.api.metabank.codinsight.app
+```  
+NB: press 2 to activate automatic redirection from HTTP to HTTPS  
+
+After this step, the Nginx config file should look like this (Add CORS if necessary) :  
+```
+sudo nano /etc/nginx/sites-enabled/api.metabank.codinsight.app
+```
+
+```
+server {
+    server_name api.metabank.codinsight.app www.api.metabank.codinsight.app;
+
+    access_log /var/log/nginx/api.metabank.codinsight.access.log;
+    error_log /var/log/nginx/api.metabank.codinsight.error.log;
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:/home/codinsight/metabank-api/metabank-api.sock;
+
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' '$http_origin';
+            add_header 'Access-Control-Allow-Credentials' 'true';
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS';
+            add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-AUTH-USER,X-API-KEY,X-API-SIGN';
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
+        set $cors '';
+        if ($http_origin ~ '^https?://(localhost|www\.app.metabank.codinsight.app)') {
+            set $cors 'true';
+        }
+
+        if ($cors = 'true') {
+            add_header 'Access-Control-Allow-Origin' "$http_origin" always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Accept,Authorization,Cache-Control,Content-Type,DNT,If-Modified-Since,Keep-Alive,Origin,User-Agent,X-Requested-With,X-AUTH-USER,X-API-KEY,X-API-SIGN' always;
+            # required to be able to read Authorization header in frontend
+            # add_header 'Access-Control-Expose-Headers' 'Authorization' always;
+        }
+    }
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/api.metabank.codinsight.app/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/api.metabank.codinsight.app/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+server {
+    if ($host = api.metabank.codinsight.app) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name api.metabank.codinsight.app www.api.api.metabank.codinsight.app;
+    return 404; # managed by Certbot
+}
+```
+
+#### Auto renew certificate
+(maybe not needed as Let's encrypt seems to add automatic rule to renew certificate ?)  
+Add command line to crontab:  
+```
+crontab -e
+```  
+```
+0 0 4 * * root certbot -q renew --nginx
+```  
+NB: useful link: https://crontab.guru/
+
+
+## 3. Setup managed database
+#### Add database SSL certificate in project var directory
+```
+nano metabank-sb-db.pem
+```  
+And copy / paste the content of the certificate  
+
+##### Update config file according to the database settings
+```
+SQL_USER =
+SQL_PASSWORD =
+SQL_HOST =
+SQL_PORT=
+SQL_DB_NAME =
+SQL_SSL_CERT =
+```
+
+#### Create database structure
+Connect database using the following command (with admin user)
+```
+mysql -h 51.159.8.77 --port 14053 -p -u admin
+```
+
+And create all the tables (see db_structure.sql file in the repo)
+
+
+## 4. Possible issues
+#### Nginx failure : "failed (13: Permission denied) while connecting to upstream"
+!!! From Ubuntu 22, Nginx does not have the rights to access the project directory in home folder.  
+Solutions:  
+- Change the group of the newly created user and his home directory to www-data  
+```
+sudo usermod -a -G www-data codinsight
+sudo chgrp www-data /home/codinsight
+sudo nano /etc/nginx/nginx.conf
+```
+OR  
+- Change the user of the Nginx service to the local user  
+```
+sudo nano /etc/nginx/nginx.conf
+```
+Change Nginx user from www-data to codinsight and restart Nginx.  
