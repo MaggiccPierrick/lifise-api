@@ -1,4 +1,4 @@
-image: python:3.10.9
+image: python:3.10.12
 
 before_script:
   - apt-get update -y
