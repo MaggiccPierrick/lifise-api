@@ -5,7 +5,6 @@ before_script:
 
 stages:
   - deploy_sandbox
-  - deploy_production
 
 deploy_sandbox:
   stage: deploy_sandbox
@@ -25,22 +24,3 @@ deploy_sandbox:
     - ssh $METABANK_SANDBOX_USERNAME@$METABANK_SANDBOX_URL -p $METABANK_SANDBOX_SSH_PORT 'cd /home/codinsight/metabank-api/ && eval "$(ssh-agent -s)" && ssh-add /home/codinsight/.ssh/gitlab_deploy && git checkout sandbox && git pull origin sandbox && sudo /bin/systemctl restart metabank-api.service && exit'
   only:
     - sandbox
-
-deploy_production:
-  stage: deploy_production
-  environment:
-    name: production
-    url: https://api.metabank-france.eu
-  before_script:
-  - apt-get update -y
-  - 'which ssh-agent || ( apt-get install openssh-client -y )'
-  - eval $(ssh-agent -s)
-  - echo "$METABANK_PROD_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-  - mkdir -p ~/.ssh
-  - chmod 700 ~/.ssh
-  - echo "$METABANK_PROD_SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
-  - chmod 644 ~/.ssh/known_hosts
-  script:
-    - ssh $METABANK_PROD_USERNAME@$METABANK_PROD_URL -p $METABANK_PROD_SSH_PORT 'cd /home/codinsight/metabank-api/ && eval "$(ssh-agent -s)" && ssh-add /home/codinsight/.ssh/gitlab_deploy_key && git checkout production && git pull origin production && sudo /bin/systemctl restart metabank-api.service && exit'
-  only:
-    - production
