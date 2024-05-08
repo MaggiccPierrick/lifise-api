@@ -27,7 +27,7 @@ Add the newly created user as a sudoer
 ``` usermod -aG sudo codinsight ```
 
 Allow the user to connect the server via ssh  
-Copy / paste the authorized key from root user to codinsight user (as root)  
+Copy / paste the authorized key from root user to codinsight user (as root):  
 ```
 mkdir /home/codinsight/.ssh
 cp /root/.ssh/authorized_keys /home/codinsight/.ssh/authorized_keys
@@ -85,7 +85,6 @@ sudo apt install automake
 sudo apt install libtool  
 sudo apt install make  
 sudo apt install python3-pip
-sudo apt install pipenv
 ```
 
 
@@ -175,7 +174,6 @@ pipenv install
 nano conf/metabank-api.env              # and copy/paste and update content
 mkdir var
 mkdir var/log
-nano var/metabank-sb-db.pem             # and copy/paste database certificate
 ```
 
 #### Configure Nginx
@@ -188,7 +186,7 @@ sudo nano /etc/nginx/sites-enabled/api.metabank.codinsight.app
 ```
 server {
     listen 80;
-    server_name api.metabank.codinsight.app www.api.api.metabank.codinsight.app;
+    server_name api.metabank.codinsight.app www.api.metabank.codinsight.app;
 
     location / {
         include uwsgi_params;
@@ -264,7 +262,7 @@ sudo certbot --nginx -d api.metabank.codinsight.app -d www.api.metabank.codinsig
 ```  
 NB: press 2 to activate automatic redirection from HTTP to HTTPS  
 
-After this step, the Nginx config file should look like this (Add CORS if necessary) :  
+After this step, the Nginx config file should look like this (Add nginx log path and CORS if necessary) :  
 ```
 sudo nano /etc/nginx/sites-enabled/api.metabank.codinsight.app
 ```
@@ -339,7 +337,7 @@ NB: useful link: https://crontab.guru/
 ## 3. Setup managed database
 #### Add database SSL certificate in project var directory
 ```
-nano metabank-sb-db.pem
+nano var/metabank-sb-db.pem             # and copy/paste database certificate
 ```  
 And copy / paste the content of the certificate  
 
