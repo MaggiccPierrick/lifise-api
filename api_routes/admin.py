@@ -703,25 +703,26 @@ def add_routes(app):
                                                    'created_date'],
                                            filter_object=filter_purchase, order='created_date', asc='DESC')
         user_list = []
-        for current_purchase in purchase_list:
-            if current_purchase.get('user_uuid') not in user_list:
-                user_list.append(current_purchase.get('user_uuid'))
-
-        filter_users = Filter()
-        filter_users.add('user_uuid', user_list, operator=OperatorType.IIN)
-        user_account = UserAccount()
-        users_info = user_account.list(fields=['user_uuid', 'firstname', 'lastname', 'email', 'public_address',
-                                               'kyc_status'],
-                                       filter_object=filter_users)
         user_details = {}
-        for current_user in users_info:
-            user_details[current_user.get('user_uuid')] = {
-                'firstname': current_user.get('firstname'),
-                'lastname': current_user.get('lastname'),
-                'email': current_user.get('email'),
-                'public_address': current_user.get('public_address'),
-                'kyc_status': current_user.get('kyc_status')
-            }
+        if len(purchase_list) > 0:
+            for current_purchase in purchase_list:
+                if current_purchase.get('user_uuid') not in user_list:
+                    user_list.append(current_purchase.get('user_uuid'))
+
+            filter_users = Filter()
+            filter_users.add('user_uuid', user_list, operator=OperatorType.IIN)
+            user_account = UserAccount()
+            users_info = user_account.list(fields=['user_uuid', 'firstname', 'lastname', 'email', 'public_address',
+                                                   'kyc_status'],
+                                           filter_object=filter_users)
+            for current_user in users_info:
+                user_details[current_user.get('user_uuid')] = {
+                    'firstname': current_user.get('firstname'),
+                    'lastname': current_user.get('lastname'),
+                    'email': current_user.get('email'),
+                    'public_address': current_user.get('public_address'),
+                    'kyc_status': current_user.get('kyc_status')
+                }
 
         json_data = {
             'status': True,
