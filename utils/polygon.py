@@ -103,11 +103,17 @@ class Polygon:
             'value': self.w3.to_wei(nb_token, 'gwei'),
             'gas': gas,
             'chainId': self.chain_id,
-            'maxFeePerGas': 2000000000,
-            'maxPriorityFeePerGas': 2000000000,
+            'maxFeePerGas': 85000000000,
+            'maxPriorityFeePerGas': 85000000000,
         }
-        gas = self.w3.eth.estimate_gas(transaction=tx)
+        try:
+            gas = self.w3.eth.estimate_gas(transaction=tx)
+        except ValueError as e:
+            self.log.error("Failed to estimate gas fees, error = {0}".format(e))
+            return False
+
         gas_price = self.w3.eth.gas_price + 1000
+        self.log.debug(gas_price)
         tx = {
             'nonce': nonce,
             'to': receiver,
@@ -174,6 +180,8 @@ class Polygon:
             return False, None
 
         transaction = self._build_matic_tx(receiver_address=receiver_address, nb_token=nb_token, nonce=nonce, gas=gas)
+        if transaction is False:
+            return False, None
         signed_tx = self._sign_tx(transaction=transaction)
         if signed_tx is None:
             return False, None
