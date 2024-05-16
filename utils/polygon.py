@@ -85,7 +85,7 @@ class Polygon:
         self.default_gas = int(env['POLYGON_GAS'])
         self.log = Logger()
 
-    def _build_matic_tx(self, receiver_address: str, nb_token: int, nonce: int, gas: int = None) -> dict:
+    def _build_matic_tx(self, receiver_address: str, nb_token: int, nonce: int, gas: int = None):
         """
         Build MATIC transaction
         :param receiver_address:
