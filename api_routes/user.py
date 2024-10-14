@@ -807,8 +807,22 @@ def add_routes(app):
         user_uuid = get_jwt_identity().get('user_uuid')
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
+        previous_kyc_status = user_account.get('kyc_status')
 
         status, http_code, message = user_account.kyc_status()
+        new_kyc_status = user_account.get('kyc_status')
+        synaps = Synaps()
+        if status is True and new_kyc_status == synaps.APPROVED and previous_kyc_status != synaps.APPROVED:
+            polygon = Polygon()
+            status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
+                                                    nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+            token_operation = TokenOperation()
+            status_op, http_code_op, message_op = token_operation.add_operation(
+                receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
+                receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
+                nb_token=float(env['POLYGON_MATIC_NEW_USER']), tx_hash=tx_hash)
+            if status_op is False:
+                app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
 
         json_data = {
             'status': status,
