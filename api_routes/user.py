@@ -101,7 +101,7 @@ def add_routes(app):
                             "Adresse email de l'utilisateur : {0}".format(email_address)
             sendgrid.send_email(to_emails=admin_emails, subject=subject_admin, txt_content=content_admin)
 
-            polygon = Polygon()
+            """polygon = Polygon()
             status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
                                                     nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
             token_operation = TokenOperation()
@@ -110,7 +110,7 @@ def add_routes(app):
                 receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
                 nb_token=float(env['POLYGON_MATIC_NEW_USER']), tx_hash=tx_hash)
             if status_op is False:
-                app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
+                app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))"""
 
         json_data = {
             'status': status,
