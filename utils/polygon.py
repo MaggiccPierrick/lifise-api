@@ -131,6 +131,7 @@ class Polygon:
 
         gas_price = self.w3.eth.gas_price + 1000
         self.log.debug(gas_price)
+
         tx = {
             'nonce': nonce,
             'to': receiver,
@@ -138,7 +139,7 @@ class Polygon:
             'gas': gas,
             'chainId': self.chain_id,
             'maxFeePerGas': gas_price,
-            'maxPriorityFeePerGas': gas_price,
+            'maxPriorityFeePerGas': Web3.to_wei(1, 'gwei'),
         }
         return tx
 
@@ -170,11 +171,12 @@ class Polygon:
         :param transaction:
         :return:
         """
-        secret = SecretManager()
-        secrets = secret.get_secrets(secret_id=env['POLYGON_SECRET_ID'])
-        if secrets is False or secrets.get('private_key') is None:
-            self.log.error("Failed to load private key")
-            return None
+        # secret = SecretManager()
+        # secrets = secret.get_secrets(secret_id=env['POLYGON_SECRET_ID'])
+        # if secrets is False or secrets.get('private_key') is None:
+        #     self.log.error("Failed to load private key")
+        #     print("Failed to load private key")
+        #     return None
         try:
             # signed_tx = self.w3.eth.account.sign_transaction(transaction, secrets.get('private_key'))
             signed_tx = self.w3.eth.account.sign_transaction(transaction, env['POLYGON_SECRET_ID'])
@@ -193,9 +195,10 @@ class Polygon:
         """
         sender = Web3.to_checksum_address(self.platform_address)
         nonce = self.w3.eth.get_transaction_count(sender, 'pending')
-        locked = lock_nonce(address=self.platform_address, nonce=nonce)
-        if locked is False:
-            return False, None
+ 
+        # locked = lock_nonce(address=self.platform_address, nonce=nonce)
+        # if locked is False:
+        #     return False, None
 
         transaction = self._build_matic_tx(receiver_address=receiver_address, nb_token=nb_token, nonce=nonce, gas=gas)
         if transaction is False:
@@ -209,7 +212,7 @@ class Polygon:
             self.log.error("Sending Polygon transaction failed with error : {0}".format(e))
             return False, None
 
-        unlock_nonce(address=self.platform_address)
+        # unlock_nonce(address=self.platform_address)
         return True, response.hex()
 
     def send_erc20(self, receiver_address: str, nb_token: float, nonce: int):
@@ -238,11 +241,12 @@ class Polygon:
         :param transactions: {tx_uuid: "receiver": "", "nb_token": 10}
         :return:
         """
+       
         sender = Web3.to_checksum_address(self.platform_address)
         nonce = self.w3.eth.get_transaction_count(sender, 'pending')
-        locked = lock_nonce(address=self.platform_address, nonce=nonce)
-        if locked is False:
-            return False, 503, "error_wait_retry", None
+        # locked = lock_nonce(address=self.platform_address, nonce=nonce)
+        # if locked is False:
+        #     return False, 503, "error_wait_retry", None
 
         transactions_hash = {}
         for tx_uuid, tx_info in transactions.items():
@@ -251,7 +255,9 @@ class Polygon:
             nonce += 1
             transactions_hash[tx_uuid] = tx_hash
 
-        unlock_nonce(address=self.platform_address)
+
+
+        # unlock_nonce(address=self.platform_address)
         return True, 200, "success_operation", transactions_hash
 
     def _get_contract_metadata(self, contract_address: str) -> dict:
