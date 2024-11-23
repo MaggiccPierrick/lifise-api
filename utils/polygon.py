@@ -60,7 +60,12 @@ class Polygon:
         self.platform_address = env['POLYGON_PUBLIC_KEY']
         self.caa_contract = env['POLYGON_CAA_CONTRACT']
         self.caa_decimals = int(env['POLYGON_CAA_DECIMALS'])
-        self.caa_contract_abi = [{
+        self.caa_contract_abi = [
+        {"constant":True,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"type":"function"},
+        {"constant":True,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
+        {"constant":True,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+        {"constant":True,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
+        {
             'constant': False,
             'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}],
             'name': 'transfer',
@@ -70,7 +75,8 @@ class Polygon:
 
         self.alchemy_api_key = env['ALCHEMY_API_KEY']
         self.max_retries = int(env['ALCHEMY_MAX_RETRIES'])
-        self.rpc_node = "{0}{1}".format(env['POLYGON_RPC_NODE'], self.alchemy_api_key)
+        # self.rpc_node = "{0}{1}".format(env['POLYGON_RPC_NODE'], self.alchemy_api_key)
+        self.rpc_node = env['POLYGON_RPC_NODE']
         self.w3 = Web3(Web3.HTTPProvider(self.rpc_node))
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
@@ -78,8 +84,11 @@ class Polygon:
             self.network = Network.MATIC_MAINNET
             self.chain_id = 137
         else:
-            self.network = Network.MATIC_AMOY
+            # self.network = Network.MATIC_MAINNET
+            self.network = Network.ETH_MAINNET
             self.chain_id = int(env['POLYGON_CHAIN_ID'])
+
+        self.erc20_stable_token_contract = self.w3.eth.contract(address=self.caa_contract, abi=self.caa_contract_abi)
 
         self.alchemy = Alchemy(self.alchemy_api_key, self.network, max_retries=self.max_retries)
         self.default_gas = int(env['POLYGON_GAS'])
@@ -97,20 +106,28 @@ class Polygon:
         if gas is None:
             gas = self.default_gas
         receiver = Web3.to_checksum_address(receiver_address)
-        tx = {
-            'nonce': nonce,
-            'to': receiver,
-            'value': self.w3.to_wei(nb_token, 'gwei'),
-            'gas': gas,
-            'chainId': self.chain_id,
-            'maxFeePerGas': 85000000000,
-            'maxPriorityFeePerGas': 85000000000,
-        }
-        try:
-            gas = self.w3.eth.estimate_gas(transaction=tx)
-        except ValueError as e:
-            self.log.error("Failed to estimate gas fees, error = {0}".format(e))
-            return False
+
+        # TODO: Check error
+        # Always have error = {'code': -32000, 'message': 'insufficient funds for transfer'} but funds are on the wallet 
+        # and the transaction can be proceed without estimate gas call
+        #
+        # tx = {
+        #     'nonce': nonce,
+        #     'to': receiver,
+        #     'value': self.w3.to_wei(nb_token, 'gwei'),
+        #     'gas': gas,
+        #     'chainId': self.chain_id,
+        #     # 'maxFeePerGas': 85000000000,
+        #     # 'maxPriorityFeePerGas': 85000000000,
+        #     'maxFeePerGas': self.w3.to_wei(1, 'gwei'),
+        #     'maxPriorityFeePerGas': self.w3.to_wei(1, 'gwei'),
+        # }
+        # try:
+        #     gas = self.w3.eth.estimate_gas(transaction=tx)
+        # except ValueError as e:
+        #     self.log.error("Failed to estimate gas fees, error = {0}".format(e))
+        #     print("Failed to estimate gas fees, error = {0}".format(e))
+        #     return False
 
         gas_price = self.w3.eth.gas_price + 1000
         self.log.debug(gas_price)
@@ -159,7 +176,8 @@ class Polygon:
             self.log.error("Failed to load private key")
             return None
         try:
-            signed_tx = self.w3.eth.account.sign_transaction(transaction, secrets.get('private_key'))
+            # signed_tx = self.w3.eth.account.sign_transaction(transaction, secrets.get('private_key'))
+            signed_tx = self.w3.eth.account.sign_transaction(transaction, env['POLYGON_SECRET_ID'])
         except Exception as e:
             self.log.error("Signing transaction failed with error : {0}".format(e))
             return None
@@ -247,13 +265,21 @@ class Polygon:
           "logo": null
         }
         """
-        token_metadata = self.alchemy.core.get_token_metadata(contract_address=contract_address)
+        # token_metadata = self.alchemy.core.get_token_metadata(contract_address=contract_address)
+
+        token_name = self.erc20_stable_token_contract.functions.name().call()
+        token_symbol = self.erc20_stable_token_contract.functions.symbol().call()
+        token_decimals = self.erc20_stable_token_contract.functions.decimals().call()
+
         return {
             'address': contract_address,
-            'name': token_metadata.name,
-            'symbol': token_metadata.symbol,
-            'decimals': token_metadata.decimals,
-            'logo': token_metadata.logo
+            # 'name': token_metadata.name,
+            # 'symbol': token_metadata.symbol,
+            # 'decimals': token_metadata.decimals,
+            # 'logo': token_metadata.logo
+            'name': token_name,
+            'symbol': token_symbol,
+            'decimals': token_decimals,
         }
 
     def get_balance(self, address: str) -> dict:
@@ -268,14 +294,18 @@ class Polygon:
         token_metadata = self._get_contract_metadata(contract_address=self.caa_contract)
         contract_balance = 0
         if len(token_metadata.get('name')) > 0 and token_metadata.get('decimals') is not None:
-            token_balances = self.alchemy.core.get_token_balances(address=address, data=[self.caa_contract])
-            token_balances = token_balances.get('token_balances')
-            for token_balance in token_balances:
-                contract_address = token_balance.contract_address
-                if contract_address == self.caa_contract:
-                    contract_balance = token_balance.token_balance
-                    contract_balance = int(contract_balance, base=16)
-                    contract_balance = contract_balance / pow(10, token_metadata.get('decimals'))
+            
+            # token_balances = self.alchemy.core.get_token_balances(address=address, data=[self.caa_contract])
+            # token_balances = token_balances.get('token_balances')
+            # for token_balance in token_balances:
+            #     contract_address = token_balance.contract_address
+            #     if contract_address == self.caa_contract:
+            #         contract_balance = token_balance.token_balance
+            #         contract_balance = int(contract_balance, base=16)
+            #         contract_balance = contract_balance / pow(10, token_metadata.get('decimals'))
+
+            contract_balance = self.erc20_stable_token_contract.functions.balanceOf(address).call()
+            contract_balance = contract_balance / pow(10, token_metadata.get('decimals'))
 
         return {
             'token_metadata': token_metadata,
