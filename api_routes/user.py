@@ -335,6 +335,7 @@ def add_routes(app):
             if user_account.get('public_address') is not None:
                 polygon = Polygon()
                 balances = polygon.get_balance(address=user_account.get('public_address'))
+
             token_claim = TokenClaim()
             to_claim, total_to_claim = token_claim.get_token_claims(user_uuid=user_uuid, claimed=False)
             already_claimed, total_claimed = token_claim.get_token_claims(user_uuid=user_uuid, claimed=True)
@@ -778,14 +779,15 @@ def add_routes(app):
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
         if user_account.get('kyc_session_id') is None:
-            synaps = Synaps()
-            status, http_code, message, session_id = synaps.init_session()
-            if status is False or session_id is None:
-                json_data = {
-                    'status': status,
-                    'message': message
-                }
-                return make_response(jsonify(json_data), http_code)
+            # synaps = Synaps()
+            # status, http_code, message, session_id = synaps.init_session()
+            # if status is False or session_id is None:
+            #     json_data = {
+            #         'status': status,
+            #         'message': message
+            #     }
+            #     return make_response(jsonify(json_data), http_code)
+            session_id = 1
             user_account.set('kyc_session_id', session_id)
             user_account.update()
 
@@ -812,10 +814,12 @@ def add_routes(app):
         status, http_code, message = user_account.kyc_status()
         new_kyc_status = user_account.get('kyc_status')
         synaps = Synaps()
+
         if status is True and new_kyc_status == synaps.APPROVED and previous_kyc_status != synaps.APPROVED:
             polygon = Polygon()
             status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
                                                     nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+            
             token_operation = TokenOperation()
             status_op, http_code_op, message_op = token_operation.add_operation(
                 receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
