@@ -780,7 +780,7 @@ def add_routes(app):
             status_op, http_code_op, message_op = token_operation.add_operation(
                 receiver_uuid=user_uuid, sender_address=env['POLYGON_PUBLIC_KEY'],
                 receiver_address=user_account.get('public_address'), token=token_operation.CAA,
-                nb_token=amount_received, tx_hash=tx_hash)
+                nb_token=amount_received, tx_hash=tx_hash.get(user_purchase_uuid))
             if status_op is False:
                 app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
 
