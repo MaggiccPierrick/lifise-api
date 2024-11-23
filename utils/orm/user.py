@@ -315,21 +315,25 @@ class UserAccount(Abstract):
         Retrieve and update KYC status if necessary
         :return:
         """
-        if self.get('kyc_session_id') is None:
-            return False, 403, "error_kyc_not_init"
+        # if self.get('kyc_session_id') is None:
+        #     return False, 403, "error_kyc_not_init"
 
         synaps = Synaps()
-        if self.get('kyc_status') == synaps.APPROVED:
-            return True, 200, "success_kyc_status"
+        # if self.get('kyc_status') == synaps.APPROVED:
+        #     return True, 200, "success_kyc_status"
 
-        status, http_code, message, session_info = synaps.get_details(session_id=self.get('kyc_session_id'))
-        if status is False:
-            return False, 503, "error_kyc"
+        # status, http_code, message, session_info = synaps.get_details(session_id=self.get('kyc_session_id'))
+        # if status is False:
+        #     return False, 503, "error_kyc"
 
-        if session_info.get('status') != self.get('kyc_status'):
-            self.set('kyc_status', session_info.get('status'))
-            self.set('kyc_status_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
-            self.update()
+        # if session_info.get('status') != self.get('kyc_status'):
+        #     self.set('kyc_status', session_info.get('status'))
+        #     self.set('kyc_status_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        #     self.update()
+
+        self.set('kyc_status', synaps.APPROVED)
+        self.set('kyc_status_date', datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        self.update()
 
         return True, 200, "success_kyc_status"
 
