@@ -18,9 +18,9 @@ class TokenOperation(Abstract):
         self._defaults = {
             'created_date': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         }
-        self.MATIC = 'MATIC'
-        self.CAA = 'CAA'
-        self.tokens = [self.MATIC, self.CAA]
+        self.NATIVETOKEN = 'NATIVE'
+        self.EUROLFS = 'EUROLFS'
+        self.tokens = [self.NATIVETOKEN, self.EUROLFS]
 
     def add_operation(self, receiver_uuid: str, sender_address: str, receiver_address: str, token: str, nb_token: float,
                       tx_hash: str = None, sender_uuid: str = None):

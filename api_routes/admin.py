@@ -11,7 +11,7 @@ from utils.orm.filter import Filter, OperatorType
 from utils.api import http_error_400, http_error_401, http_error_403, json_data_required, admin_required
 from utils.email import Sendgrid
 from utils.security import generate_hash
-from utils.polygon import Polygon
+from utils.provider import Provider
 from utils.orm.blockchain import TokenOperation
 
 
@@ -36,8 +36,8 @@ def add_routes(app):
             status, http_code, message = admin.login(login=login, password=password)
             if status is True:
                 delay = int(env['APP_TOKEN_DELAY']) // 60
-                subject = "MetaBank Admin - 2FA login"
-                content = "Une nouvelle connexion à votre compte admin sur MetaBank vient d'être réalisée.<br>" \
+                subject = "LiFiSe Admin - 2FA login"
+                content = "Une nouvelle connexion à votre compte admin sur LiFiSe vient d'être réalisée.<br>" \
                           "Entrez le code d'authentification suivant (expire dans {0} minutes) :".format(delay)
                 sendgrid = Sendgrid()
                 sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content,
@@ -100,7 +100,7 @@ def add_routes(app):
                                                           lastname=lastname, old_password=old_password,
                                                           new_password=new_password)
         if status is True:
-            subject = "MetaBank Admin - update account"
+            subject = "LiFiSe Admin - update account"
             content = "Votre compte admin vient d'être mis à jour."
             sendgrid = Sendgrid()
             sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content)
@@ -187,7 +187,7 @@ def add_routes(app):
         status, http_code, message = admin.create_account(creator_id=admin_uuid, email_address=email_address,
                                                           firstname=firstname, lastname=lastname)
         if status is True:
-            subject = "MetaBank Admin"
+            subject = "LiFiSe Admin"
             content = "Un compte administrateur vient d'être créé avec votre adresse email.<br>" \
                       "Rendez vous sur la page suivante pour créer votre mot de passe :<br>" \
                       "{0}/admin/signin".format(env['APP_FRONT_URL'])
@@ -222,9 +222,9 @@ def add_routes(app):
             }
             return make_response(jsonify(json_data), http_code)
 
-        subject = "MetaBank Admin - reset password"
+        subject = "LiFiSe Admin - reset password"
         content = "Nous venons de recevoir une demande de réinitialisation de votre mot de passe " \
-                  "sur la plateforme MetaBank Admin.<br>" \
+                  "sur la plateforme LiFiSe Admin.<br>" \
                   "Copiez / collez le code suivant dans le formulaire pour pouvoir créer un nouveau mot de passe."
         sendgrid = Sendgrid()
         email_sent = sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content,
@@ -267,7 +267,7 @@ def add_routes(app):
             }
             return make_response(jsonify(json_data), http_code)
 
-        subject = "MetaBank Admin - mot de passe réinitialisé"
+        subject = "LiFiSe Admin - mot de passe réinitialisé"
         content = "Votre mot de passe a été réinitialisé avec succès."
         sendgrid = Sendgrid()
         email_sent = sendgrid.send_email(to_emails=[admin.get('email')], subject=subject, txt_content=content)
@@ -402,7 +402,7 @@ def add_routes(app):
         existed = []
         user_account = UserAccount()
         sendgrid = Sendgrid()
-        email_subject = "Créez votre compte MetaBank"
+        email_subject = "Créez votre compte LiFiSe"
         invitation_link = "{0}/signup?user_uuid=".format(env['APP_FRONT_URL'])
         decline_link = "{0}/decline?user_uuid=".format(env['APP_FRONT_URL'])
 
@@ -417,33 +417,33 @@ def add_routes(app):
                 user_account.load({'email_hash': email_address_hash})
             else:
                 if claimable_tokens > 0:
-                    content = "Vous êtes invité à rejoindre Metabank-France et à collecter votre cadeau " \
-                              "de {nb_token} CAA euros en cliquant sur le lien suivant :<br>" \
+                    content = "Vous êtes invité à rejoindre LiFiSe et à collecter votre cadeau " \
+                              "de {nb_token} EUR LFS en cliquant sur le lien suivant :<br>" \
                               "{invitation_link}{user_uuid}<br>" \
-                              "<br>MetaBank-France est la première Néo-banque Française web3 grand public. " \
+                              "<br>LiFiSe est la première Néo-banque Française web3 grand public. " \
                               "C’est une Fintech Mass Market issue de l’univers crypto.<br>" \
-                              "Metabank-France c’est : un exchange, un euro stable coin et " \
+                              "LiFiSe c’est : un exchange, un euro stable coin et " \
                               "un utility Token de Gouvernance.<br>" \
                               "Notre Slogan : « Liberty – Safety – Trust »<br><br>" \
                               "Pour nous rejoindre, vous devez disposer d’une simple adresse email " \
                               "et suivre votre lien d'enregistrement ci-dessus puis vous laisser guider !<br><br>" \
-                              "Si vous ne souhaitez pas créer votre compte MetaBank, " \
+                              "Si vous ne souhaitez pas créer votre compte LiFiSe, " \
                               "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :<br>" \
                               "{decline_link}{user_uuid}".format(nb_token=claimable_tokens,
                                                                  invitation_link=invitation_link,
                                                                  user_uuid=user_account.get('user_uuid'),
                                                                  decline_link=decline_link)
                 else:
-                    content = "Vous êtes invité à rejoindre Metabank-France en cliquant sur le lien suivant :<br>" \
+                    content = "Vous êtes invité à rejoindre LiFiSe en cliquant sur le lien suivant :<br>" \
                               "{invitation_link}{user_uuid}<br>" \
-                              "<br>MetaBank-France est la première Néo-banque Française web3 grand public. " \
+                              "<br>LiFiSe est la première Néo-banque Française web3 grand public. " \
                               "C’est une Fintech Mass Market issue de l’univers crypto.<br>" \
-                              "Metabank-France c’est : un exchange, un euro stable coin et " \
+                              "LiFiSe c’est : un exchange, un euro stable coin et " \
                               "un utility Token de Gouvernance.<br>" \
                               "Notre Slogan : « Liberty – Safety – Trust »<br><br>" \
                               "Pour nous rejoindre, vous devez disposer d’une simple adresse email " \
                               "et suivre votre lien d'enregistrement ci-dessus puis vous laisser guider !<br><br>" \
-                              "Si vous ne souhaitez pas créer votre compte MetaBank, " \
+                              "Si vous ne souhaitez pas créer votre compte LiFiSe, " \
                               "cliquez sur le lien suivant pour refuser et ne plus recevoir nos messages :<br>" \
                               "{decline_link}{user_uuid}".format(invitation_link=invitation_link,
                                                                  user_uuid=user_account.get('user_uuid'),
@@ -455,8 +455,8 @@ def add_routes(app):
                                    nb_token=claimable_tokens)
 
         if len(existed) > 0 and claimable_tokens > 0:
-            subject = "MetaBank vous offre des euros"
-            content = "MetaBank-France vous offre {0} CAA euros.<br>" \
+            subject = "LiFiSe vous offre des euros"
+            content = "LiFiSe vous offre {0} EUR LFS.<br>" \
                       "Connectez-vous à votre compte pour les collecter.".format(claimable_tokens)
             sendgrid.send_email(to_emails=existed, subject=subject, txt_content=content)
 
@@ -546,10 +546,10 @@ def add_routes(app):
                                                                           claimed=True)
             to_claim, total_to_claim = token_claim.get_token_claims(user_uuid=user_account.get('user_uuid'),
                                                                     claimed=False)
-            polygon = Polygon()
+            provider = Provider()
             balances = {}
             if user_account.get('public_address') is not None:
-                balances = polygon.get_balance(address=user_account.get('public_address'))
+                balances = provider.get_balance(address=user_account.get('public_address'))
             user_details = {
                 'email_address': user_account.get('email'),
                 'user_uuid': user_account.get('user_uuid'),
@@ -587,7 +587,7 @@ def add_routes(app):
     @admin_required
     def admin_get_user_operations(user_uuid):
         """
-        Get user onchain CAA operations
+        Get user onchain EUR LFS operations
         :return:
         """
         in_page_key = request.args.get('in_page_key')
@@ -602,8 +602,8 @@ def add_routes(app):
             }
             return make_response(jsonify(json_data), 200)
 
-        polygon = Polygon()
-        status, http_code, message, operations, out_page_key, in_page_key = polygon.get_operations(
+        provider = Provider()
+        status, http_code, message, operations, out_page_key, in_page_key = provider.get_operations(
             address=user_account.get('public_address'), in_page_key=in_page_key, out_page_key=out_page_key)
 
         token_claim = TokenClaim()
@@ -767,8 +767,8 @@ def add_routes(app):
                 'nb_token': amount_received
             }
         }
-        polygon = Polygon()
-        status_tx, http_code_tx, message_tx, tx_hash = polygon.send_batch_tx(transactions=transaction)
+        provider = Provider()
+        status_tx, http_code_tx, message_tx, tx_hash = provider.send_batch_tx(transactions=transaction)
         if status_tx is True:
             status, message, http_code = user_purchase.confirm_payment(amount_received=amount_received,
                                                                        tx_hash=tx_hash.get(user_purchase_uuid))
@@ -778,20 +778,20 @@ def add_routes(app):
 
             token_operation = TokenOperation()
             status_op, http_code_op, message_op = token_operation.add_operation(
-                receiver_uuid=user_uuid, sender_address=env['POLYGON_PUBLIC_KEY'],
-                receiver_address=user_account.get('public_address'), token=token_operation.CAA,
+                receiver_uuid=user_uuid, sender_address=env['ADMIN_WALLET_PUBLIC_KEY'],
+                receiver_address=user_account.get('public_address'), token=token_operation.EUROLFS,
                 nb_token=amount_received, tx_hash=tx_hash.get(user_purchase_uuid))
             if status_op is False:
                 app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
 
             sendgrid = Sendgrid()
-            subject = "MetaBank - traitement de votre achat"
+            subject = "LiFiSe - traitement de votre achat"
             content = "Nous vous remercions pour l’ordre passé sur notre plateforme. Nous vous confirmons " \
                       "la bonne réception de votre paiement et l’envoie des Tokens vers votre compte " \
-                      "MetaBank-France. Encore une fois, merci pour votre confiance.<br>" \
+                      "LiFiSe. Encore une fois, merci pour votre confiance.<br>" \
                       "Détails de votre achat :<br>" \
                       "Référence : {0}<br>" \
-                      "Commande : {1} CAA Euro<br>" \
+                      "Commande : {1} EUR LFS<br>" \
                       "Montant total reçu : {2} EUR<br>" \
                       "Nombre de tokens envoyés : {3}".format(user_purchase.get('reference'),
                                                               user_purchase.get('nb_token'),
@@ -809,15 +809,16 @@ def add_routes(app):
     @admin_required
     def get_wallet_balance():
         """
-        Get platform wallet balances (CAA & MATIC)
+        Get platform wallet balances (EUR LFS & Native token)
         :return:
         """
-        polygon = Polygon()
-        balances = polygon.get_balance(address=env['POLYGON_PUBLIC_KEY'])
+        provider = Provider()
+        balances = provider.get_balance(address=env['ADMIN_WALLET_PUBLIC_KEY'])
+
         json_data = {
             'status': True,
             'message': "success_wallet_balance",
             'balances': balances,
-            'address': env['POLYGON_PUBLIC_KEY']
+            'address': env['ADMIN_WALLET_PUBLIC_KEY']
         }
         return make_response(jsonify(json_data), 200)

@@ -1,4 +1,4 @@
-# MetaBank API - User related features
+# LiFiSe API - User related features
   
 <i>This documentation will be updated after each update of the platform.</i>  
 
@@ -39,7 +39,7 @@ JSON
     "lastname": "Doe",
     "email_address": "john@doe.com",
     "did_token": "xxx",
-    "user_uuid": ""                     # optional, only used if the user has been invited and pre-registered by MetaBank
+    "user_uuid": ""                     # optional, only used if the user has been invited and pre-registered by LiFiSe
 }
 ```
 RESPONSE
@@ -138,8 +138,8 @@ RESPONSE
             "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
             "decimals": 6,
             "logo": null,
-            "name": "CaaEURO Stablecoin",
-            "symbol": "CaaEURO"
+            "name": "EuroLFS Stablecoin",
+            "symbol": "EUROLFS"
         }
     }
 }
@@ -275,8 +275,8 @@ Full personal profile
             "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
             "decimals": 6,
             "logo": null,
-            "name": "CaaEURO Stablecoin",
-            "symbol": "CaaEURO"
+            "name": "EuroLFS Stablecoin",
+            "symbol": "EUROLFS"
         }
     }
 }
@@ -300,7 +300,7 @@ Public profile
 
 ### Get operations
 _Authorized user: User_  
-Return user operations (CAA).  
+Return user operations (EUROLFS).  
 
 URI
 _in_page_key_ arg is optional and used to get older received operations (pagination).  
@@ -319,7 +319,7 @@ RESPONSE
     "message": "success_operations",
     "operations": [
         {
-            "asset": "CaaEURO",
+            "asset": "EuroLFS",
             "block": 45111804,
             "block_time": "2024-01-24T14:21:34.000Z",
             "claim_uuid": null,
@@ -329,7 +329,7 @@ RESPONSE
             "value": 10
         },
         {
-            "asset": "CaaEURO",
+            "asset": "EuroLFS",
             "block": 45111401,
             "block_time": "2024-01-24T14:06:02.000Z",
             "claim_uuid": null,
@@ -392,7 +392,7 @@ HEADER
 X-AUTH-USER: "JWT_token"
 ```
 JSON  
-Add with a public address (Polygon address):  
+Add with a public address (Wallet address):  
 ```
 {
     "public_address": "0x1234567",
@@ -550,7 +550,7 @@ RESPONSE
 
 ### Create order
 _Authorized user: User with KYC_  
-Create an order to purchase CAA tokens.  
+Create an order to purchase EUROLFS tokens.  
 
 URI
 ```
@@ -574,7 +574,7 @@ RESPONSE
         "bic_swift": "FRXXXXX",
         "iban": "AAAA BBBB CCCC DDDD EEEE",
         "vendor_address": "16 Cours Alexandre Borodine - 26000 VALENCE",
-        "vendor_name": "MetaBank France SAS"
+        "vendor_name": "LiFiSe France SAS"
     },
     "message": "success_saved",
     "price_eur": 100,

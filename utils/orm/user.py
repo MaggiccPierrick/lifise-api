@@ -12,7 +12,7 @@ from utils.orm.filter import Filter
 from utils.security import generate_hash
 from utils.email import check_email_format
 from utils.scaleway import ObjectStorage
-from utils.polygon import Polygon
+from utils.provider import Provider
 from utils.orm.blockchain import TokenOperation
 from utils.kyc import Synaps
 
@@ -534,8 +534,8 @@ class TokenClaim(Abstract):
         if len(transactions) == 0:
             return False, 404, "error_bad_request", None
 
-        polygon = Polygon()
-        status, http_code, message, tx_hash = polygon.send_batch_tx(transactions=transactions)
+        provider = Provider()
+        status, http_code, message, tx_hash = provider.send_batch_tx(transactions=transactions)
         if status is False:
             return False, http_code, message, None
 
@@ -549,8 +549,8 @@ class TokenClaim(Abstract):
                 self.update()
             token_operation = TokenOperation()
             status_op, http_code_op, message_op = token_operation.add_operation(
-                receiver_uuid=user_uuid, sender_address=env['POLYGON_PUBLIC_KEY'],
-                receiver_address=user_address, token=token_operation.CAA,
+                receiver_uuid=user_uuid, sender_address=env['ADMIN_WALLET_PUBLIC_KEY'],
+                receiver_address=user_address, token=token_operation.EUROLFS,
                 nb_token=transactions[claim_uuid].get('nb_token'), tx_hash=operation_hash)
             transactions[claim_uuid]['tx_hash'] = operation_hash
         return True, 200, "success_operation", transactions
