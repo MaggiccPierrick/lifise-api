@@ -55,12 +55,17 @@ def unlock_nonce(address: str) -> bool:
     return True
 
 
-class Polygon:
+class Provider:
     def __init__(self):
-        self.platform_address = env['POLYGON_PUBLIC_KEY']
-        self.caa_contract = env['POLYGON_CAA_CONTRACT']
-        self.caa_decimals = int(env['POLYGON_CAA_DECIMALS'])
-        self.caa_contract_abi = [{
+        self.platform_address = env['ADMIN_WALLET_PUBLIC_KEY']
+        self.euro_lfs_contract = env['PROVIDER_TOKEN_EUROLFS_CONTRACT']
+        self.euro_lfs_decimals = int(env['PROVIDER_TOKEN_EUROLFS_DECIMALS'])
+        self.euro_lfs_contract_abi = [
+        {"constant":True,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"type":"function"},
+        {"constant":True,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
+        {"constant":True,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+        {"constant":True,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
+        {
             'constant': False,
             'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}],
             'name': 'transfer',
@@ -70,24 +75,28 @@ class Polygon:
 
         self.alchemy_api_key = env['ALCHEMY_API_KEY']
         self.max_retries = int(env['ALCHEMY_MAX_RETRIES'])
-        self.rpc_node = "{0}{1}".format(env['POLYGON_RPC_NODE'], self.alchemy_api_key)
+        # self.rpc_node = "{0}{1}".format(env['PROVIDER_RPC_NODE'], self.alchemy_api_key)
+        self.rpc_node = env['PROVIDER_RPC_NODE']
         self.w3 = Web3(Web3.HTTPProvider(self.rpc_node))
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-        if env['POLYGON_NETWORK'] == 'MAINNET':
-            self.network = Network.MATIC_MAINNET
+        if env['PROVIDER_NETWORK'] == 'MAINNET':
+            self.network = Network.AVALANCHE_MAINNET
             self.chain_id = 137
         else:
-            self.network = Network.MATIC_AMOY
-            self.chain_id = int(env['POLYGON_CHAIN_ID'])
+            # self.network = Network.MATIC_MAINNET
+            self.network = Network.ETH_MAINNET
+            self.chain_id = int(env['PROVIDER_CHAIN_ID'])
+
+        self.erc20_stable_token_contract = self.w3.eth.contract(address=self.euro_lfs_contract, abi=self.euro_lfs_contract_abi)
 
         self.alchemy = Alchemy(self.alchemy_api_key, self.network, max_retries=self.max_retries)
-        self.default_gas = int(env['POLYGON_GAS'])
+        self.default_gas = int(env['PROVIDER_GAS'])
         self.log = Logger()
 
-    def _build_matic_tx(self, receiver_address: str, nb_token: int, nonce: int, gas: int = None):
+    def _build_w3_tx(self, receiver_address: str, nb_token: int, nonce: int, gas: int = None):
         """
-        Build MATIC transaction
+        Build web3 transaction
         :param receiver_address:
         :param nb_token:
         :param nonce:
@@ -97,23 +106,32 @@ class Polygon:
         if gas is None:
             gas = self.default_gas
         receiver = Web3.to_checksum_address(receiver_address)
-        tx = {
-            'nonce': nonce,
-            'to': receiver,
-            'value': self.w3.to_wei(nb_token, 'gwei'),
-            'gas': gas,
-            'chainId': self.chain_id,
-            'maxFeePerGas': 85000000000,
-            'maxPriorityFeePerGas': 85000000000,
-        }
-        try:
-            gas = self.w3.eth.estimate_gas(transaction=tx)
-        except ValueError as e:
-            self.log.error("Failed to estimate gas fees, error = {0}".format(e))
-            return False
+
+        # TODO: Check error
+        # Always have error = {'code': -32000, 'message': 'insufficient funds for transfer'} but funds are on the wallet 
+        # and the transaction can be proceed without estimate gas call
+        #
+        # tx = {
+        #     'nonce': nonce,
+        #     'to': receiver,
+        #     'value': self.w3.to_wei(nb_token, 'gwei'),
+        #     'gas': gas,
+        #     'chainId': self.chain_id,
+        #     # 'maxFeePerGas': 85000000000,
+        #     # 'maxPriorityFeePerGas': 85000000000,
+        #     'maxFeePerGas': self.w3.to_wei(1, 'gwei'),
+        #     'maxPriorityFeePerGas': self.w3.to_wei(1, 'gwei'),
+        # }
+        # try:
+        #     gas = self.w3.eth.estimate_gas(transaction=tx)
+        # except ValueError as e:
+        #     self.log.error("Failed to estimate gas fees, error = {0}".format(e))
+        #     print("Failed to estimate gas fees, error = {0}".format(e))
+        #     return False
 
         gas_price = self.w3.eth.gas_price + 1000
         self.log.debug(gas_price)
+
         tx = {
             'nonce': nonce,
             'to': receiver,
@@ -121,7 +139,7 @@ class Polygon:
             'gas': gas,
             'chainId': self.chain_id,
             'maxFeePerGas': gas_price,
-            'maxPriorityFeePerGas': gas_price,
+            'maxPriorityFeePerGas': Web3.to_wei(1, 'gwei'),
         }
         return tx
 
@@ -135,15 +153,15 @@ class Polygon:
         """
         receiver = Web3.to_checksum_address(receiver_address)
         sender = Web3.to_checksum_address(self.platform_address)
-        contract_address = Web3.to_checksum_address(self.caa_contract)
-        contract = self.w3.eth.contract(address=contract_address, abi=self.caa_contract_abi)
+        contract_address = Web3.to_checksum_address(self.euro_lfs_contract)
+        contract = self.w3.eth.contract(address=contract_address, abi=self.euro_lfs_contract_abi)
         tx = {
             'chainId': self.chain_id,
             'from': sender,
             'nonce': nonce,
             'gasPrice': self.w3.eth.gasPrice,
         }
-        nb_token = int(nb_token * pow(10, self.caa_decimals))
+        nb_token = int(nb_token * pow(10, self.euro_lfs_decimals))
         unsigned_txn = contract.functions.transfer(receiver, nb_token).build_transaction(tx)
         return unsigned_txn
 
@@ -153,21 +171,23 @@ class Polygon:
         :param transaction:
         :return:
         """
-        secret = SecretManager()
-        secrets = secret.get_secrets(secret_id=env['POLYGON_SECRET_ID'])
-        if secrets is False or secrets.get('private_key') is None:
-            self.log.error("Failed to load private key")
-            return None
+        # secret = SecretManager()
+        # secrets = secret.get_secrets(secret_id=env['ADMIN_WALLET_PRIVATE_KEY'])
+        # if secrets is False or secrets.get('private_key') is None:
+        #     self.log.error("Failed to load private key")
+        #     print("Failed to load private key")
+        #     return None
         try:
-            signed_tx = self.w3.eth.account.sign_transaction(transaction, secrets.get('private_key'))
+            # signed_tx = self.w3.eth.account.sign_transaction(transaction, secrets.get('private_key'))
+            signed_tx = self.w3.eth.account.sign_transaction(transaction, env['ADMIN_WALLET_PRIVATE_KEY'])
         except Exception as e:
             self.log.error("Signing transaction failed with error : {0}".format(e))
             return None
         return signed_tx
 
-    def send_matic(self, receiver_address: str, nb_token: int, gas: int = None):
+    def send_native_token(self, receiver_address: str, nb_token: int, gas: int = None):
         """
-        Send MATIC to given address
+        Send Native Token to given address
         :param receiver_address:
         :param nb_token: in gwei
         :param gas:
@@ -175,11 +195,12 @@ class Polygon:
         """
         sender = Web3.to_checksum_address(self.platform_address)
         nonce = self.w3.eth.get_transaction_count(sender, 'pending')
-        locked = lock_nonce(address=self.platform_address, nonce=nonce)
-        if locked is False:
-            return False, None
+ 
+        # locked = lock_nonce(address=self.platform_address, nonce=nonce)
+        # if locked is False:
+        #     return False, None
 
-        transaction = self._build_matic_tx(receiver_address=receiver_address, nb_token=nb_token, nonce=nonce, gas=gas)
+        transaction = self._build_w3_tx(receiver_address=receiver_address, nb_token=nb_token, nonce=nonce, gas=gas)
         if transaction is False:
             return False, None
         signed_tx = self._sign_tx(transaction=transaction)
@@ -188,10 +209,10 @@ class Polygon:
         try:
             response = self.w3.eth.send_raw_transaction(transaction=signed_tx.rawTransaction)
         except Exception as e:
-            self.log.error("Sending Polygon transaction failed with error : {0}".format(e))
+            self.log.error("Sending native token transaction failed with error : {0}".format(e))
             return False, None
 
-        unlock_nonce(address=self.platform_address)
+        # unlock_nonce(address=self.platform_address)
         return True, response.hex()
 
     def send_erc20(self, receiver_address: str, nb_token: float, nonce: int):
@@ -220,11 +241,12 @@ class Polygon:
         :param transactions: {tx_uuid: "receiver": "", "nb_token": 10}
         :return:
         """
+       
         sender = Web3.to_checksum_address(self.platform_address)
         nonce = self.w3.eth.get_transaction_count(sender, 'pending')
-        locked = lock_nonce(address=self.platform_address, nonce=nonce)
-        if locked is False:
-            return False, 503, "error_wait_retry", None
+        # locked = lock_nonce(address=self.platform_address, nonce=nonce)
+        # if locked is False:
+        #     return False, 503, "error_wait_retry", None
 
         transactions_hash = {}
         for tx_uuid, tx_info in transactions.items():
@@ -233,7 +255,9 @@ class Polygon:
             nonce += 1
             transactions_hash[tx_uuid] = tx_hash
 
-        unlock_nonce(address=self.platform_address)
+
+
+        # unlock_nonce(address=self.platform_address)
         return True, 200, "success_operation", transactions_hash
 
     def _get_contract_metadata(self, contract_address: str) -> dict:
@@ -241,51 +265,64 @@ class Polygon:
         Return contract metadata
         :param contract_address:
         :return: {
-          "name": "CaaEURO Stablecoin",
-          "symbol": "CaaEURO",
+          "name": "EuroLFS Stablecoin",
+          "symbol": "EUROLFS",
           "decimals": 6,
           "logo": null
         }
         """
-        token_metadata = self.alchemy.core.get_token_metadata(contract_address=contract_address)
+        # token_metadata = self.alchemy.core.get_token_metadata(contract_address=contract_address)
+
+        token_name = self.erc20_stable_token_contract.functions.name().call()
+        token_symbol = self.erc20_stable_token_contract.functions.symbol().call()
+        token_decimals = self.erc20_stable_token_contract.functions.decimals().call()
+
         return {
             'address': contract_address,
-            'name': token_metadata.name,
-            'symbol': token_metadata.symbol,
-            'decimals': token_metadata.decimals,
-            'logo': token_metadata.logo
+            # 'name': token_metadata.name,
+            # 'symbol': token_metadata.symbol,
+            # 'decimals': token_metadata.decimals,
+            # 'logo': token_metadata.logo
+            'name': token_name,
+            'symbol': token_symbol,
+            'decimals': token_decimals,
         }
 
     def get_balance(self, address: str) -> dict:
         """
-        Return MATIC and contracts balances of the given address
+        Return Native token and contracts balances of the given address
         :param address:
         :return:
         """
-        matic_balance = self.w3.eth.get_balance(address)
-        matic_balance = matic_balance / pow(10, 18)
+        native_token_balance = self.w3.eth.get_balance(address)
+        native_token_balance = native_token_balance / pow(10, 18)
 
-        token_metadata = self._get_contract_metadata(contract_address=self.caa_contract)
+        token_metadata = self._get_contract_metadata(contract_address=self.euro_lfs_contract)
         contract_balance = 0
         if len(token_metadata.get('name')) > 0 and token_metadata.get('decimals') is not None:
-            token_balances = self.alchemy.core.get_token_balances(address=address, data=[self.caa_contract])
-            token_balances = token_balances.get('token_balances')
-            for token_balance in token_balances:
-                contract_address = token_balance.contract_address
-                if contract_address == self.caa_contract:
-                    contract_balance = token_balance.token_balance
-                    contract_balance = int(contract_balance, base=16)
-                    contract_balance = contract_balance / pow(10, token_metadata.get('decimals'))
+            
+            # token_balances = self.alchemy.core.get_token_balances(address=address, data=[self.euro_lfs_contract])
+            # token_balances = token_balances.get('token_balances')
+
+            # for token_balance in token_balances:
+            #     contract_address = token_balance.contract_address
+            #     if contract_address == self.euro_lfs_contract:
+            #         contract_balance = token_balance.token_balance
+            #         contract_balance = int(contract_balance, base=16)
+            #         contract_balance = contract_balance / pow(10, token_metadata.get('decimals'))
+
+            contract_balance = self.erc20_stable_token_contract.functions.balanceOf(address).call()
+            contract_balance = contract_balance / pow(10, token_metadata.get('decimals'))
 
         return {
             'token_metadata': token_metadata,
-            'matic': matic_balance,
+            'native_token': native_token_balance,
             'token_balance': contract_balance
         }
 
     def get_operations(self, address: str, in_page_key: str = None, out_page_key: str = None):
         """
-        Return CAA operations of the address
+        Return EUROLFS operations of the address
         :param address:
         :param in_page_key:
         :param out_page_key:
@@ -295,7 +332,7 @@ class Polygon:
         operations = []
         try:
             out_operations = self.alchemy.core.get_asset_transfers(from_address=address, category=category,
-                                                                   contract_addresses=[self.caa_contract],
+                                                                   contract_addresses=[self.euro_lfs_contract],
                                                                    with_metadata=True, order='desc',
                                                                    max_count=15, page_key=out_page_key)
         except exceptions.AlchemyError:
@@ -316,7 +353,7 @@ class Polygon:
 
         try:
             in_operations = self.alchemy.core.get_asset_transfers(to_address=address, category=category,
-                                                                  contract_addresses=[self.caa_contract],
+                                                                  contract_addresses=[self.euro_lfs_contract],
                                                                   with_metadata=True, order='desc',
                                                                   max_count=15, page_key=in_page_key)
         except exceptions.AlchemyError:

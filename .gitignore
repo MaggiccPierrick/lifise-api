@@ -1,5 +1,6 @@
 .idea
 var
+venv
 metabank-api.sock
 nohup.out
 __pycache__

@@ -9,7 +9,7 @@ from utils.email import Sendgrid
 from utils.redis_db import Redis
 from utils.magic_link import MagicLink
 from utils.security import generate_hash
-from utils.polygon import Polygon
+from utils.provider import Provider
 from utils.orm.blockchain import TokenOperation
 from utils.orm.filter import Filter
 from utils.orm.admin import AdminAccount
@@ -82,9 +82,9 @@ def add_routes(app):
                                                                      magiclink_issuer=user_data.get('issuer'),
                                                                      firstname=firstname, lastname=lastname)
         if status is True and user_account.get('public_address') is not None:
-            subject = "Bienvenue chez MetaBank"
+            subject = "Bienvenue chez LiFiSe"
             content = "Nous vous confirmons que votre compte a été ouvert avec succès " \
-                      "et que votre enregistrement en tant qu’utilisateur de MetaBank-France est terminé.<br>" \
+                      "et que votre enregistrement en tant qu’utilisateur de LiFiSe est terminé.<br>" \
                       "Nous vous invitons dès à présent à explorer les fonctionnalités.<br>"
             sendgrid = Sendgrid()
             sendgrid.send_email(to_emails=[email_address], subject=subject, txt_content=content)
@@ -96,19 +96,19 @@ def add_routes(app):
             admin_emails = []
             for active_admin in active_admins:
                 admin_emails.append(active_admin.get('email'))
-            subject_admin = "MetaBank Admin : nouvel enregistrement"
+            subject_admin = "LiFiSe Admin : nouvel enregistrement"
             content_admin = "Un nouvel utilisateur vient de s'enregistrer sur la plateforme.<br>" \
                             "Adresse email de l'utilisateur : {0}".format(email_address)
             sendgrid.send_email(to_emails=admin_emails, subject=subject_admin, txt_content=content_admin)
 
-            """polygon = Polygon()
-            status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
-                                                    nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+            """provider = Provider()
+            status_tx, tx_hash = provider.send_matic(receiver_address=user_account.get('public_address'),
+                                                    nb_token=int(float(env['NATIVE_TOKEN_AMOUNT_NEW_USER']) * 1000000000))
             token_operation = TokenOperation()
             status_op, http_code_op, message_op = token_operation.add_operation(
-                receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
+                receiver_uuid=user_account.get('user_uuid'), sender_address=env['ADMIN_WALLET_PUBLIC_KEY'],
                 receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
-                nb_token=float(env['POLYGON_MATIC_NEW_USER']), tx_hash=tx_hash)
+                nb_token=float(env['NATIVE_TOKEN_AMOUNT_NEW_USER']), tx_hash=tx_hash)
             if status_op is False:
                 app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))"""
 
@@ -136,12 +136,12 @@ def add_routes(app):
         if status is True:
             token_claim = TokenClaim()
             token_claim.deactivate(user_uuid=user_uuid)
-            subject = "MetaBank"
-            content = "Vous avez été invité à rejoindre Metabank-France et à collecter votre cadeau " \
+            subject = "LiFiSe"
+            content = "Vous avez été invité à rejoindre LiFiSe et à collecter votre cadeau " \
                       "en cliquant sur le bouton « réclamer ». " \
                       "Vous avez souhaité ne pas y répondre favorablement.<br>" \
                       "S’il s’agit d’une erreur ou si vous changez d'avis, n'hésitez pas à nous contacter " \
-                      "pour ouvrir votre compte utilisateur MetaBank-France.<br>" \
+                      "pour ouvrir votre compte utilisateur LiFiSe.<br>" \
                       "Dans le cas contraire, nous vous remercions pour votre lecture."
             sendgrid = Sendgrid()
             sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content)
@@ -195,20 +195,20 @@ def add_routes(app):
         jwt_token = create_access_token(identity=jwt_identity)
         refresh_token = create_refresh_token(identity=jwt_identity)
 
-        polygon = Polygon()
+        provider = Provider()
         balances = {}
         if user_account.get('public_address') is not None:
-            balances = polygon.get_balance(address=user_account.get('public_address'))
-
+            balances = provider.get_balance(address=user_account.get('public_address'))
+              
         if env['APP_ENVIRONMENT'] == 'sandbox':
-            if balances.get('matic') is not None and balances.get('matic') < 0.003:
-                status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
-                                                        nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+            if balances.get('native_token') is not None and balances.get('native_token') < 0.003:
+                status_tx, tx_hash = provider.send_native_token(receiver_address=user_account.get('public_address'),
+                                                        nb_token=int(float(env['NATIVE_TOKEN_AMOUNT_NEW_USER']) * 1000000000))
                 token_operation = TokenOperation()
                 status_op, http_code_op, message_op = token_operation.add_operation(
-                    receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
-                    receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
-                    nb_token=float(env['POLYGON_MATIC_NEW_USER']), tx_hash=tx_hash)
+                    receiver_uuid=user_account.get('user_uuid'), sender_address=env['ADMIN_WALLET_PUBLIC_KEY'],
+                    receiver_address=user_account.get('public_address'), token=token_operation.NATIVETOKEN,
+                    nb_token=float(env['NATIVE_TOKEN_AMOUNT_NEW_USER']), tx_hash=tx_hash)
                 if status_op is False:
                     app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
 
@@ -333,8 +333,9 @@ def add_routes(app):
             selfie, selfie_ext = user_account.get_selfie()
             balances = {}
             if user_account.get('public_address') is not None:
-                polygon = Polygon()
-                balances = polygon.get_balance(address=user_account.get('public_address'))
+                provider = Provider()
+                balances = provider.get_balance(address=user_account.get('public_address'))
+
             token_claim = TokenClaim()
             to_claim, total_to_claim = token_claim.get_token_claims(user_uuid=user_uuid, claimed=False)
             already_claimed, total_claimed = token_claim.get_token_claims(user_uuid=user_uuid, claimed=True)
@@ -387,7 +388,7 @@ def add_routes(app):
     @user_required()
     def get_user_operations():
         """
-        Return user CAA operations
+        Return user EUR LFS operations
         :return:
         """
         in_page_key = request.args.get('in_page_key')
@@ -403,8 +404,8 @@ def add_routes(app):
             }
             return make_response(jsonify(json_data), 200)
 
-        polygon = Polygon()
-        status, http_code, message, operations, out_page_key, in_page_key = polygon.get_operations(
+        provider = Provider()
+        status, http_code, message, operations, out_page_key, in_page_key = provider.get_operations(
             address=user_account.get('public_address'), in_page_key=in_page_key, out_page_key=out_page_key)
 
         token_claim = TokenClaim()
@@ -496,7 +497,7 @@ def add_routes(app):
             status, http_code, message = user_account.set_otp_token()
             if status is True:
                 delay = int(env['APP_TOKEN_DELAY']) // 60
-                subject = "MetaBank - Demande de confirmation"
+                subject = "LiFiSe - Demande de confirmation"
                 content = "Veuillez renseigner le code suivant pour confirmer l'ajout du bénéficiaire " \
                           "(le code expire dans {0} minutes) :<br>".format(delay)
                 sendgrid.send_email(to_emails=[user_account.get('email')], subject=subject, txt_content=content,
@@ -521,7 +522,7 @@ def add_routes(app):
                 status, http_code, message = beneficiary.add_new(user_uuid=user_uuid, email=email_address,
                                                                  public_address=public_address)
 
-            subject = "MetaBank - Nouveau bénéficiaire"
+            subject = "LiFiSe - Nouveau bénéficiaire"
             if status is True:
                 content = "Nous vous confirmons que vous avez ajouté un nouveau bénéficiaire avec succès. " \
                           "Vous pouvez dés à présent réaliser des opérations avec ce nouveau bénéficiaire."
@@ -586,7 +587,7 @@ def add_routes(app):
     @json_data_required
     @jwt_required()
     @user_required(kyc=True)
-    def claim_caa():
+    def claim_eur_lfs():
         """
         Claim tokens
         :return:
@@ -641,12 +642,12 @@ def add_routes(app):
             admin_emails.append(active_admin.get('email'))
 
         sendgrid = Sendgrid()
-        subject = "MetaBank Admin : nouvelle demande assistance"
+        subject = "LiFiSe Admin : nouvelle demande assistance"
         content = "Un utilisateur vient d'envoyer le message suivant :<br>{0}<br>" \
                   "Adresse email de l'utilisateur : {1}".format(user_message, user_account.get('email'))
         sendgrid.send_email(to_emails=admin_emails, subject=subject, txt_content=content)
 
-        subject = "MetaBank Assistance"
+        subject = "LiFiSe Assistance"
         content = "Nous vous confirmons la bonne réception de votre demande d’assistance, " \
                   "et nous vous confirmons qu’elle est en cours de traitement.<br>" \
                   "Nos équipes s’engagent à vous répondre dans les meilleurs délais pour la résolution " \
@@ -704,7 +705,7 @@ def add_routes(app):
             admin_emails.append(active_admin.get('email'))
 
         sendgrid = Sendgrid()
-        subject = "MetaBank Admin : nouvel achat"
+        subject = "LiFiSe Admin : nouvel achat"
         user_url = "{0}/admin/user/{1}".format(env['APP_FRONT_URL'], user_uuid)
         content = "Un utilisateur vient de créer un ordre d'achat :<br>" \
                   "Fiche client : {0}<br>" \
@@ -715,12 +716,12 @@ def add_routes(app):
 
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
-        subject = "MetaBank - confirmation achat"
+        subject = "LiFiSe - confirmation achat"
         content = "Nous vous remercions pour l’ordre passé sur notre plateforme. " \
                   "Votre achat est important pour nous et nous sommes ravis de vous compter parmi nos clients.<br>" \
                   "Détails de votre commande :<br>" \
                   "Référence : {0}<br>" \
-                  "Achat : {1} CAA Euro<br>" \
+                  "Achat : {1} EUR LFS<br>" \
                   "Montant total : {2} EUR<br><br>" \
                   "Votre commande sera traitée dans les plus brefs délais. Vous recevrez un email de confirmation " \
                   "lorsqu'un administrateur confirmera la réception du paiement et l’envoie des tokens.<br>" \
@@ -778,14 +779,15 @@ def add_routes(app):
         user_account = UserAccount()
         user_account.load({'user_uuid': user_uuid})
         if user_account.get('kyc_session_id') is None:
-            synaps = Synaps()
-            status, http_code, message, session_id = synaps.init_session()
-            if status is False or session_id is None:
-                json_data = {
-                    'status': status,
-                    'message': message
-                }
-                return make_response(jsonify(json_data), http_code)
+            # synaps = Synaps()
+            # status, http_code, message, session_id = synaps.init_session()
+            # if status is False or session_id is None:
+            #     json_data = {
+            #         'status': status,
+            #         'message': message
+            #     }
+            #     return make_response(jsonify(json_data), http_code)
+            session_id = 1
             user_account.set('kyc_session_id', session_id)
             user_account.update()
 
@@ -812,15 +814,17 @@ def add_routes(app):
         status, http_code, message = user_account.kyc_status()
         new_kyc_status = user_account.get('kyc_status')
         synaps = Synaps()
+
         if status is True and new_kyc_status == synaps.APPROVED and previous_kyc_status != synaps.APPROVED:
-            polygon = Polygon()
-            status_tx, tx_hash = polygon.send_matic(receiver_address=user_account.get('public_address'),
-                                                    nb_token=int(float(env['POLYGON_MATIC_NEW_USER']) * 1000000000))
+            provider = Provider()
+            status_tx, tx_hash = provider.send_native_token(receiver_address=user_account.get('public_address'),
+                                                    nb_token=int(float(env['NATIVE_TOKEN_AMOUNT_NEW_USER']) * 1000000000))
+            
             token_operation = TokenOperation()
             status_op, http_code_op, message_op = token_operation.add_operation(
-                receiver_uuid=user_account.get('user_uuid'), sender_address=env['POLYGON_PUBLIC_KEY'],
-                receiver_address=user_account.get('public_address'), token=token_operation.MATIC,
-                nb_token=float(env['POLYGON_MATIC_NEW_USER']), tx_hash=tx_hash)
+                receiver_uuid=user_account.get('user_uuid'), sender_address=env['ADMIN_WALLET_PUBLIC_KEY'],
+                receiver_address=user_account.get('public_address'), token=token_operation.NATIVETOKEN,
+                nb_token=float(env['NATIVE_TOKEN_AMOUNT_NEW_USER']), tx_hash=tx_hash)
             if status_op is False:
                 app.logger.error("Failed to store token operation, tx hash : {0}".format(tx_hash))
 

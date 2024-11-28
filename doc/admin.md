@@ -1,4 +1,4 @@
-# MetaBank API - Admin related features
+# LiFiSe API - Admin related features
   
 <i>This documentation will be updated after each update of the platform.</i>  
 
@@ -482,14 +482,14 @@ RESPONSE (USER DETAILS)
         "updated_date": "2024-02-09T10:48:50.072856Z",
         "user_uuid": "2afa5a02-8b57-403d-8268-cfacbdf9faba",
         "wallet": {
-            "matic": 0.3592487124946442,
+            "native_token": 0.3592487124946442,
             "token_balance": 10500.00001,
             "token_metadata": {
                 "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
                 "decimals": 6,
                 "logo": null,
-                "name": "CaaEURO Stablecoin",
-                "symbol": "CaaEURO"
+                "name": "EuroLFS Stablecoin",
+                "symbol": "EuroLFS"
             }
         }
     }
@@ -498,7 +498,7 @@ RESPONSE (USER DETAILS)
 
 ### Get user operations
 _Authorized user: Admin_  
-Get CAA operations of the given user.  
+Get EUROLFS operations of the given user.  
 
 URI  
 _in_page_key_ arg is optional and used to get older received operations (pagination).  
@@ -517,7 +517,7 @@ RESPONSE
     "message": "success_operations",
     "operations": [
         {
-            "asset": "CaaEURO",
+            "asset": "EUROLFS",
             "block": 45111804,
             "block_time": "2024-01-24T14:21:34.000Z",
             "claim_uuid": "3ce1ce38-51c2-42b5-bebe-e3b3f4b33aaa",
@@ -527,7 +527,7 @@ RESPONSE
             "value": 10
         },
         {
-            "asset": "CaaEURO",
+            "asset": "EUROLFS",
             "block": 45111401,
             "block_time": "2024-01-24T14:06:02.000Z",
             "claim_uuid": null,
@@ -537,7 +537,7 @@ RESPONSE
             "value": 99
         },
         {
-            "asset": "CaaEURO",
+            "asset": "EUROLFS",
             "block": 44841952,
             "block_time": "2024-01-16T17:40:03.000Z",
             "claim_uuid": null,
@@ -606,7 +606,7 @@ RESPONSE
 
 ### Get platform wallet balance
 _Authorized user: Admin_  
-Return MATIC and CAA balances of the platform wallet.  
+Return Native token and EUR LFS balances of the platform wallet.  
 
 URI
 ```
@@ -621,14 +621,14 @@ RESPONSE
 {
     "address": "0x9940a09A974BC71b76D095cEF5E38CFF5fe0ea8c",
     "balances": {
-        "matic": 0.399416997999685,
+        "native_token": 0.399416997999685,
         "token_balance": 5000000.0,
         "token_metadata": {
             "address": "0x5D7aA3749fb9bb9fe20534d26CB5a941d9e02871",
             "decimals": 6,
             "logo": null,
-            "name": "CaaEURO Stablecoin",
-            "symbol": "CaaEURO"
+            "name": "EuroLFS Stablecoin",
+            "symbol": "EUROLFS"
         }
     },
     "message": "success_wallet_balance",
@@ -638,7 +638,7 @@ RESPONSE
 
 ### Get user orders
 _Authorized user: Admin_  
-Return MATIC and CAA balances of the platform wallet.  
+Return Native token and EUR LFS balances of the platform wallet.  
 
 URI  
 _pending arg is optional to return only pending or confirmed purchases. Returns all if not given._

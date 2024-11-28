@@ -10,11 +10,14 @@ from os import environ as env
 from utils.log import Logger
 from utils.redis_db import Redis
 from api_routes import admin, user
+from flask import Flask
+from flask_cors import CORS
 
-load_dotenv(dotenv_path="conf/metabank.env")
+load_dotenv(dotenv_path="conf/lifise.env")
 
 # init Flask application
 app = Flask(__name__)
+CORS(app) 
 app.secret_key = env['APP_SECRET_KEY']
 app.url_map.strict_slashes = False
 # app.config['DEBUG'] = True
@@ -30,16 +33,18 @@ jwt = JWTManager(app)
 
 @jwt.token_in_blocklist_loader
 def check_if_token_is_revoked(jwt_header, jwt_payload):
-    jti = jwt_payload["jti"]
-    try:
-        redis = Redis()
-        redis_connection = redis.get_connection()
-        if redis_connection is False:
-            return False
-        token_in_redis = redis_connection.get(jti)
-        return token_in_redis is not None
-    except (ConnectionRefusedError, ConnectionError):
-        return False
+    # jti = jwt_payload["jti"]
+    # try:
+    #     redis = Redis()
+    #     redis_connection = redis.get_connection()
+    #     if redis_connection is False:
+    #         return False
+    #     token_in_redis = redis_connection.get(jti)
+    #     return token_in_redis is not None
+    # except (ConnectionRefusedError, ConnectionError):
+    #     return False
+    return False
+    
 
 
 admin.add_routes(app)
@@ -113,4 +118,6 @@ def clear_trailing():
 
 if __name__ == '__main__':
     app.logger = Logger()
-    app.run(host='0.0.0.0', port=int(env['APP_PORT']), debug=False)
+    app.run(host='0.0.0.0', port=int(env['APP_PORT']), debug=True)
+
+
