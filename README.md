@@ -113,7 +113,7 @@ sudo chown codinsight:codinsight /var/log/redis-lifise/
 sudo nano /etc/redis/lifise-api.conf
 ```
 
-Copy / paste the following content in Redis config file (/etc/redis/metabank-api.conf)  
+Copy / paste the following content in Redis config file (/etc/redis/lifise-api.conf)  
 ```
 port              6379
 daemonize         no
@@ -209,7 +209,7 @@ pipenv shell
 uwsgi --socket 0.0.0.0:14000 --protocol=http -w wsgi:app
 ```  
 
-Create uwsgi log directory and metabank-api.log file  
+Create uwsgi log directory and lifise-api.log file  
 ```
 sudo mkdir /var/log/uwsgi
 sudo touch /var/log/uwsgi/lifise-api.log
