@@ -13,7 +13,7 @@ from api_routes import admin, user
 from flask import Flask
 # from flask_cors import CORS
 
-load_dotenv(dotenv_path="conf/lifise.env")
+load_dotenv(dotenv_path="conf/lifise-api.env")
 
 # init Flask application
 app = Flask(__name__)
