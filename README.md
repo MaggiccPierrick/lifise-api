@@ -180,7 +180,7 @@ mkdir var/log
 Follow instructions here : https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uwsgi-and-nginx-on-ubuntu-22-04  
 Create api.testnet.lifise.io config file in /etc/nginx/sites-available with the following content.  
 ```
-sudo nano /etc/nginx/sites-enabled/api.tesnet.lifise.io
+sudo nano /etc/nginx/sites-enabled/api.testnet.lifise.io
 ```
 
 ```

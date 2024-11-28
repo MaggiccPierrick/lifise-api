@@ -11,13 +11,13 @@ from utils.log import Logger
 from utils.redis_db import Redis
 from api_routes import admin, user
 from flask import Flask
-from flask_cors import CORS
+# from flask_cors import CORS
 
 load_dotenv(dotenv_path="conf/lifise.env")
 
 # init Flask application
 app = Flask(__name__)
-CORS(app) 
+# CORS(app) 
 app.secret_key = env['APP_SECRET_KEY']
 app.url_map.strict_slashes = False
 # app.config['DEBUG'] = True
