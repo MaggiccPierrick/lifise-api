@@ -205,7 +205,7 @@ sudo ufw allow 'Nginx HTTP'
 
 Test if uwsgi is working well  
 ```
-pipenv shell
+python3 -m pipenv shell
 uwsgi --socket 0.0.0.0:14000 --protocol=http -w wsgi:app
 ```  
 
@@ -232,8 +232,8 @@ After=network.target
 User=codinsight
 Group=codinsight
 WorkingDirectory=/home/codinsight/lifise-api
-Environment="PATH=/home/codinsight/.local/share/virtualenvs/lifise-api-oFMDqNVs/bin"
-ExecStart=/home/codinsight/.local/share/virtualenvs/lifise-api-oFMDqNVs/bin/uwsgi --ini lifise-api.ini
+Environment="PATH=/home/codinsight/.local/share/virtualenvs/lifise-api-Iq0Jg48_/bin"
+ExecStart=/home/codinsight/.local/share/virtualenvs/lifise-api-Iq0Jg48_/bin/uwsgi --ini lifise-api.ini
 
 [Install]
 WantedBy=multi-user.target
